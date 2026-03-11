@@ -1,0 +1,9 @@
+CREATE TABLE addresses (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  department VARCHAR(120) NOT NULL,
+  city VARCHAR(120) NOT NULL,
+  address_line TEXT NOT NULL,
+  is_default BOOLEAN NOT NULL,
+  created_at TIMESTAMP NOT NULL
+);

@@ -1,0 +1,15 @@
+CREATE TABLE product_variants (
+  id BIGSERIAL PRIMARY KEY,
+  product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  color VARCHAR(100) NOT NULL,
+  size VARCHAR(10) NOT NULL,
+  sku VARCHAR(120) NOT NULL UNIQUE,
+  price NUMERIC(12,2) NOT NULL,
+  stock INTEGER NOT NULL
+);
+
+CREATE TABLE product_images (
+  id BIGSERIAL PRIMARY KEY,
+  product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  image_url TEXT NOT NULL
+);

@@ -1,0 +1,6 @@
+CREATE TABLE cart_items (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  product_variant_id BIGINT NOT NULL REFERENCES product_variants(id) ON DELETE CASCADE,
+  quantity INTEGER NOT NULL
+);

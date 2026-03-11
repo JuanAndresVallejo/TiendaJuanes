@@ -1,0 +1,103 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { getDashboardStats } from "../../../services/admin";
+import { Line, Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Tooltip,
+  Legend
+} from "chart.js";
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend);
+
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<any>(null);
+
+  useEffect(() => {
+    getDashboardStats().then(setStats).catch(() => setStats(null));
+  }, []);
+
+  if (!stats) {
+    return <p>Cargando metricas...</p>;
+  }
+
+  const salesByDay = {
+    labels: stats.salesByDay.map((p: any) => p.label),
+    datasets: [
+      {
+        label: "Ventas por dia",
+        data: stats.salesByDay.map((p: any) => p.value),
+        borderColor: "#C65D3A",
+        backgroundColor: "rgba(198, 93, 58, 0.2)"
+      }
+    ]
+  };
+
+  const salesByMonth = {
+    labels: stats.salesByMonth.map((p: any) => p.label),
+    datasets: [
+      {
+        label: "Ventas por mes",
+        data: stats.salesByMonth.map((p: any) => p.value),
+        backgroundColor: "#7A7F4F"
+      }
+    ]
+  };
+
+  const topProducts = {
+    labels: stats.topProducts.map((p: any) => p.label),
+    datasets: [
+      {
+        label: "Productos mas vendidos",
+        data: stats.topProducts.map((p: any) => p.value),
+        backgroundColor: "#1F1C17"
+      }
+    ]
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="grid gap-4 md:grid-cols-5">
+        <div className="bg-white/70 border border-sand rounded-2xl p-4">
+          <p className="text-xs uppercase tracking-[0.2em]">Ventas hoy</p>
+          <p className="text-xl font-semibold">${stats.salesToday.toLocaleString("es-CO")}</p>
+        </div>
+        <div className="bg-white/70 border border-sand rounded-2xl p-4">
+          <p className="text-xs uppercase tracking-[0.2em]">Ventas del mes</p>
+          <p className="text-xl font-semibold">${stats.salesMonth.toLocaleString("es-CO")}</p>
+        </div>
+        <div className="bg-white/70 border border-sand rounded-2xl p-4">
+          <p className="text-xs uppercase tracking-[0.2em]">Pedidos</p>
+          <p className="text-xl font-semibold">{stats.totalOrders}</p>
+        </div>
+        <div className="bg-white/70 border border-sand rounded-2xl p-4">
+          <p className="text-xs uppercase tracking-[0.2em]">Productos vendidos</p>
+          <p className="text-xl font-semibold">{stats.productsSold}</p>
+        </div>
+        <div className="bg-white/70 border border-sand rounded-2xl p-4">
+          <p className="text-xs uppercase tracking-[0.2em]">Clientes</p>
+          <p className="text-xl font-semibold">{stats.totalCustomers}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="bg-white/70 border border-sand rounded-2xl p-4">
+          <Line data={salesByDay} />
+        </div>
+        <div className="bg-white/70 border border-sand rounded-2xl p-4">
+          <Bar data={salesByMonth} />
+        </div>
+      </div>
+
+      <div className="bg-white/70 border border-sand rounded-2xl p-4">
+        <Bar data={topProducts} />
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres:5432/juanes}
+    username: ${DB_USER:juanes}
+    password: ${DB_PASSWORD:juanes}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+  flyway:
+    enabled: true
+    validate-on-migrate: false
+    ignore-missing-migrations: true
+  cache:
+    type: redis
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:change_this_secret_key}
+    expirationMinutes: ${JWT_EXP_MINUTES:720}
+  mercadopago:
+    accessToken: ${MERCADOPAGO_ACCESS_TOKEN:}
+    notificationUrl: ${MERCADOPAGO_NOTIFICATION_URL:http://localhost/api/payments/webhook}
+  cloudinary:
+    url: ${CLOUDINARY_URL:}
+
+logging:
+  level:
+    org.hibernate.SQL: warn

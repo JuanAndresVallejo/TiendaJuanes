@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  font-family: "Manrope", sans-serif;
+  background: radial-gradient(circle at top, #f6f2ea 0%, #efe3d4 35%, #e7d9c8 100%);
+  color: #1f1c17;
+}
+
+::selection {
+  background: #c65d3a;
+  color: #f6f2ea;
+}
