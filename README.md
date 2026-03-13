@@ -31,6 +31,7 @@ Backend:
 
 Frontend:
 - `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_STATUS_BANNER` (true en dev para mostrar estado de servicios)
 
 ## Levantar el proyecto
 
@@ -85,6 +86,12 @@ Orders:
 - `GET /api/orders/my-orders`
 - `GET /api/orders/{id}/tracking`
 
+Users:
+- `GET /api/users/me`
+
+Health:
+- `GET /api/health`
+
 Payments:
 - `POST /api/payments/create-preference`
 - `POST /api/payments/webhook`
@@ -109,3 +116,4 @@ Admin:
 - Las migraciones iniciales se encuentran en `backend/src/main/resources/db/migration`.
 - Redis se usa para cachear productos y busquedas.
 - Emails requieren configurar SMTP en variables de entorno.
+- En desarrollo, el footer muestra el estado de servicios (backend, API, postgres, redis, nginx, MercadoPago, SMTP).

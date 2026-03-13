@@ -3,6 +3,7 @@
 ## Estado general
 El ecommerce está construido y funcional, con backend en Spring Boot + PostgreSQL y frontend en Next.js + Tailwind.  
 Se añadieron cupones, tracking, emails, analytics, cache Redis, y mejoras de seguridad.
+Se incorporó un **banner de estado en el footer (solo dev)** que consulta `/api/health` para verificar servicios.
 
 ---
 
@@ -10,6 +11,7 @@ Se añadieron cupones, tracking, emails, analytics, cache Redis, y mejoras de se
 
 ### 1) Seed de productos (50)
 El seed está en `V15__seed_products_after_fix.sql` y es idempotente.
+Ahora genera productos de **ropa, calzado y accesorios** (con actualización de datos si ya existen).
 Si Flyway falla en esa migración:
 
 ```bash
@@ -37,7 +39,7 @@ Debe ser `50`.
 ### 3) Integraciones pendientes
 
 - MercadoPago: hay estructura, pero falta credencial real en entorno.
-- Email: requiere SMTP real en variables.
+- Email: requiere SMTP real en variables (si no existe, el flujo no se bloquea).
 - Cloudinary: requiere `CLOUDINARY_URL`.
 
 ---
@@ -47,7 +49,13 @@ Debe ser `50`.
 Rutas clave:
 - `/productos`, `/producto/[id]`, `/carrito`, `/checkout`
 - `/mis-pedidos`, `/mis-pedidos/[id]`
+- `/mi-perfil` (perfil cliente)
 - `/admin/*` con panel completo
+
+UI reciente:
+- Carrusel de marcas con logos locales en `frontend/public/brands`
+- Filtros en productos con selects (categoría, marca, talla)
+- Botones de redes: WhatsApp, Instagram y TikTok
 
 ---
 
@@ -60,10 +68,14 @@ Rutas clave:
 - postgres
 - redis
 
+Dev-only:
+- Banner de estado en footer. Control por `NEXT_PUBLIC_STATUS_BANNER` (true en docker).
+
 ---
 
 ## Próximos pasos sugeridos
 
 1. Confirmar backend y DB en limpio
 2. Conectar MercadoPago real
-3. Deploy en servidor propio
+3. Configurar SMTP real para emails
+4. Deploy en servidor propio

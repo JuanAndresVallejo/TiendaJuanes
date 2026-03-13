@@ -63,11 +63,13 @@ const nextConfig = {
 };
 ```
 
+Nota: el carrusel de marcas usa logos locales en `frontend/public/brands`, no requiere dominios remotos.
+
 3) Construye el sitio estático:
 
 ```bash
 cd frontend
-NEXT_PUBLIC_API_URL=https://api.tiendajuanes.com npm run build
+NEXT_PUBLIC_API_URL=https://api.tiendajuanes.com NEXT_PUBLIC_STATUS_BANNER=false npm run build
 ```
 
 Esto genera la carpeta `frontend/out`.

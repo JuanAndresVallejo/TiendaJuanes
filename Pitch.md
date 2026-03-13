@@ -16,6 +16,7 @@ Una tienda online moderna, rápida y lista para crecer, diseñada para vender ro
 ### 2) Confianza y conversión
 - Diseño limpio tipo ecommerce premium
 - Botón directo de WhatsApp para asistencia
+- Accesos rápidos a Instagram y TikTok
 - Estados de pedido claros para el cliente
 - Mensajes automáticos por correo
 

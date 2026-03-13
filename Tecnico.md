@@ -62,6 +62,11 @@ Servicios en `docker-compose.yml`:
 ### Auth
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+### Perfil
+- `GET /api/users/me`
+
+### Health
+- `GET /api/health`
 
 ### Productos
 - `GET /api/products`
@@ -143,6 +148,7 @@ Migraciones principales:
 - JWT en `Authorization: Bearer <token>`
 - `JwtAuthenticationFilter` valida tokens
 - Roles: `/api/admin/**` requiere ADMIN
+- `/api/health` es público
 - Rate limiting para login
 - Headers de seguridad:
   - `X-Frame-Options`
@@ -171,6 +177,7 @@ Redis configurado en `application.yml` y `docker-compose.yml`.
 - Pedido enviado
 
 Variables en `.env` / `docker-compose.yml`.
+Si SMTP no está configurado, el checkout no se bloquea (loggea el error).
 
 ---
 
@@ -195,6 +202,7 @@ Públicas:
 Usuario:
 - `/mis-pedidos`
 - `/mis-pedidos/[id]`
+- `/mi-perfil`
 
 Admin:
 - `/admin/dashboard`
@@ -236,3 +244,7 @@ sudo docker-compose exec postgres psql -U juanes -d juanes -c \"SELECT count(*) 
 sudo docker-compose exec postgres psql -U juanes -d juanes -c \"DELETE FROM flyway_schema_history WHERE version='15';\"
 sudo docker-compose up -d --build backend
 ```
+
+Si el banner de estado en footer no aparece:
+- Verifica que `NEXT_PUBLIC_STATUS_BANNER=true` esté en `docker-compose.yml`
+- Rebuild del frontend/stack.
