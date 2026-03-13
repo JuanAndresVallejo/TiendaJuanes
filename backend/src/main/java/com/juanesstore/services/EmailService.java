@@ -1,7 +1,6 @@
 package com.juanesstore.services;
 
 import com.juanesstore.models.Order;
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.nio.charset.StandardCharsets;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -43,7 +42,7 @@ public class EmailService {
       helper.setSubject(subject);
       helper.setText(html, true);
       mailSender.send(message);
-    } catch (MessagingException ex) {
+    } catch (Exception ex) {
       // Silent fail to avoid blocking flows when mail is not configured
     }
   }

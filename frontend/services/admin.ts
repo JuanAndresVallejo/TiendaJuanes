@@ -1,4 +1,5 @@
 import { getToken } from "./auth";
+import { apiUrl } from "./api";
 import type { Product } from "./products";
 
 function authHeaders() {
@@ -9,13 +10,13 @@ function authHeaders() {
 }
 
 export async function getAdminProducts(): Promise<Product[]> {
-  const res = await fetch("/api/admin/products", { headers: authHeaders() });
+  const res = await fetch(apiUrl("/admin/products"), { headers: authHeaders() });
   if (!res.ok) throw new Error("No se pudieron cargar los productos");
   return res.json();
 }
 
 export async function deleteProduct(id: number) {
-  const res = await fetch(`/api/admin/products/${id}`, {
+  const res = await fetch(apiUrl(`/admin/products/${id}`), {
     method: "DELETE",
     headers: authHeaders()
   });
@@ -23,7 +24,7 @@ export async function deleteProduct(id: number) {
 }
 
 export async function createProduct(payload: any) {
-  const res = await fetch("/api/admin/products", {
+  const res = await fetch(apiUrl("/admin/products"), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload)
@@ -33,7 +34,7 @@ export async function createProduct(payload: any) {
 }
 
 export async function updateProduct(id: number, payload: any) {
-  const res = await fetch(`/api/admin/products/${id}`, {
+  const res = await fetch(apiUrl(`/admin/products/${id}`), {
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload)
@@ -43,13 +44,13 @@ export async function updateProduct(id: number, payload: any) {
 }
 
 export async function getInventory() {
-  const res = await fetch("/api/admin/inventory", { headers: authHeaders() });
+  const res = await fetch(apiUrl("/admin/inventory"), { headers: authHeaders() });
   if (!res.ok) throw new Error("No se pudo cargar inventario");
   return res.json();
 }
 
 export async function updateInventory(payload: { productVariantId: number; newStock?: number; delta?: number }) {
-  const res = await fetch("/api/admin/inventory/update", {
+  const res = await fetch(apiUrl("/admin/inventory/update"), {
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload)
@@ -58,13 +59,13 @@ export async function updateInventory(payload: { productVariantId: number; newSt
 }
 
 export async function getOrders() {
-  const res = await fetch("/api/admin/orders", { headers: authHeaders() });
+  const res = await fetch(apiUrl("/admin/orders"), { headers: authHeaders() });
   if (!res.ok) throw new Error("No se pudieron cargar pedidos");
   return res.json();
 }
 
 export async function updateOrderStatus(orderId: number, status: string) {
-  const res = await fetch("/api/admin/orders/update-status", {
+  const res = await fetch(apiUrl("/admin/orders/update-status"), {
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ orderId, status })
@@ -73,7 +74,13 @@ export async function updateOrderStatus(orderId: number, status: string) {
 }
 
 export async function getDashboardStats() {
-  const res = await fetch("/api/admin/dashboard/stats", { headers: authHeaders() });
+  const res = await fetch(apiUrl("/admin/dashboard/stats"), { headers: authHeaders() });
   if (!res.ok) throw new Error("No se pudieron cargar metricas");
+  return res.json();
+}
+
+export async function getAdminUsers() {
+  const res = await fetch(apiUrl("/admin/users"), { headers: authHeaders() });
+  if (!res.ok) throw new Error("No se pudieron cargar usuarios");
   return res.json();
 }

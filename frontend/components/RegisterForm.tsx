@@ -5,6 +5,43 @@ import { register } from "../services/auth";
 import { useToast } from "./ToastProvider";
 
 export default function RegisterForm() {
+  const departmentCities: Record<string, string[]> = {
+    "Amazonas": ["Leticia"],
+    "Antioquia": ["Medellin", "Bello", "Sabaneta", "Itagui", "La Estrella"],
+    "Arauca": ["Arauca"],
+    "Atlántico": ["Barranquilla", "Soledad", "Malambo"],
+    "Bolívar": ["Cartagena", "Magangue"],
+    "Boyacá": ["Tunja", "Duitama", "Sogamoso"],
+    "Caldas": ["Manizales", "Chinchina"],
+    "Caquetá": ["Florencia"],
+    "Casanare": ["Yopal"],
+    "Cauca": ["Popayan"],
+    "Cesar": ["Valledupar"],
+    "Chocó": ["Quibdo"],
+    "Córdoba": ["Monteria"],
+    "Cundinamarca": ["Soacha", "Zipaquira", "Chia"],
+    "Guainía": ["Inirida"],
+    "Guaviare": ["San Jose del Guaviare"],
+    "Huila": ["Neiva"],
+    "La Guajira": ["Riohacha", "Maicao"],
+    "Magdalena": ["Santa Marta"],
+    "Meta": ["Villavicencio"],
+    "Nariño": ["Pasto", "Tumaco"],
+    "Norte de Santander": ["Cucuta"],
+    "Putumayo": ["Mocoa"],
+    "Quindío": ["Armenia"],
+    "Risaralda": ["Pereira", "Dosquebradas"],
+    "San Andrés y Providencia": ["San Andres"],
+    "Santander": ["Bucaramanga", "Floridablanca"],
+    "Sucre": ["Sincelejo"],
+    "Tolima": ["Ibague"],
+    "Valle del Cauca": ["Cali", "Palmira", "Buenaventura"],
+    "Vaupés": ["Mitu"],
+    "Vichada": ["Puerto Carreno"],
+    "Bogotá D.C.": ["Bogota"]
+  };
+  const departmentOptions = Object.keys(departmentCities);
+
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -24,7 +61,25 @@ export default function RegisterForm() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const cityOptions = departmentCities[form.department] || [];
+
   const handleSubmit = async () => {
+    const requiredFields = [
+      form.firstName,
+      form.lastName,
+      form.documentId,
+      form.phone,
+      form.email,
+      form.department,
+      form.city,
+      form.addressLine,
+      form.password,
+      form.confirmPassword
+    ];
+    if (requiredFields.some((field) => !field.trim())) {
+      show("Completa todos los campos", "error");
+      return;
+    }
     if (form.password.length < 8) {
       show("La contraseña debe tener mínimo 8 caracteres", "error");
       return;
@@ -39,8 +94,9 @@ export default function RegisterForm() {
       await register(form);
       show("Registro exitoso");
       window.location.href = "/";
-    } catch {
-      show("No se pudo registrar", "error");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo registrar";
+      show(message, "error");
     } finally {
       setLoading(false);
     }
@@ -100,23 +156,35 @@ export default function RegisterForm() {
       </div>
       <div>
         <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Departamento</label>
-        <input
-          type="text"
-          placeholder="Antioquia"
+        <select
           className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
           value={form.department}
-          onChange={(e) => handleChange("department", e.target.value)}
-        />
+          onChange={(e) => {
+            const nextDepartment = e.target.value;
+            const nextCities = departmentCities[nextDepartment] || [];
+            setForm((prev) => ({
+              ...prev,
+              department: nextDepartment,
+              city: nextCities[0] || ""
+            }));
+          }}
+        >
+          {departmentOptions.map((dept) => (
+            <option key={dept} value={dept}>{dept}</option>
+          ))}
+        </select>
       </div>
       <div>
         <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Ciudad</label>
-        <input
-          type="text"
-          placeholder="Medellin"
+        <select
           className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
           value={form.city}
           onChange={(e) => handleChange("city", e.target.value)}
-        />
+        >
+          {cityOptions.map((city) => (
+            <option key={city} value={city}>{city}</option>
+          ))}
+        </select>
       </div>
       <div>
         <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Direccion</label>

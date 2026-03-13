@@ -2,17 +2,38 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getFullName, getRole, getToken, logout } from "../services/auth";
 
 export default function Navbar() {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [fullName, setFullName] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    setFullName(getFullName());
+    setRole(getRole());
+    setIsAuthenticated(!!getToken());
+  }, []);
+
+  const profileHref = role === "ADMIN" ? "/admin/dashboard" : "/mi-perfil";
+  const profileLabel = fullName ? `Mi perfil (${fullName.split(" ")[0]})` : "Mi perfil";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
       router.push(`/productos?q=${encodeURIComponent(query.trim())}`);
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsAuthenticated(false);
+    setFullName(null);
+    setRole(null);
+    router.push("/");
   };
 
   return (
@@ -32,8 +53,23 @@ export default function Navbar() {
         <nav className="flex items-center gap-6 text-sm uppercase tracking-[0.2em]">
           <Link href="/productos" className="hover:text-terracotta">Productos</Link>
           <Link href="/carrito" className="hover:text-terracotta">Mi carrito</Link>
-          <Link href="/mis-pedidos" className="hover:text-terracotta">Mis pedidos</Link>
-          <Link href="/login" className="hover:text-terracotta">Iniciar sesión</Link>
+          {isAuthenticated ? (
+            <>
+              <Link href="/mis-pedidos" className="hover:text-terracotta">Mis pedidos</Link>
+              <Link href={profileHref} className="hover:text-terracotta">
+                {profileLabel}
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="hover:text-terracotta uppercase tracking-[0.2em]"
+              >
+                Cerrar sesión
+              </button>
+            </>
+          ) : (
+            <Link href="/login" className="hover:text-terracotta">Iniciar sesión</Link>
+          )}
         </nav>
       </div>
     </header>

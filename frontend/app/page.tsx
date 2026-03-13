@@ -1,8 +1,19 @@
-import ProductCard from "../components/ProductCard";
-import { getProducts } from "../services/products";
-
 export default async function HomePage() {
-  const products = await getProducts();
+  const brands = [
+    { name: "Levis", logo: "/brands/levis.svg" },
+    { name: "Nike", logo: "/brands/nike.svg" },
+    { name: "Adidas", logo: "/brands/adidas.svg" },
+    { name: "Puma", logo: "/brands/puma.svg" },
+    { name: "Tommy Hilfiger", logo: "/brands/tommy.svg" },
+    { name: "Calvin Klein", logo: "/brands/calvin.svg" },
+    { name: "Ralph Lauren", logo: "/brands/ralph.svg" },
+    { name: "New Balance", logo: "/brands/newbalance.svg" },
+    { name: "Guess", logo: "/brands/guess.svg" },
+    { name: "Vans", logo: "/brands/vans.svg" },
+    { name: "Reebok", logo: "/brands/reebok.svg" },
+    { name: "Converse", logo: "/brands/converse.svg" }
+  ];
+  const track = [...brands, ...brands];
 
   return (
     <section className="max-w-6xl mx-auto px-6 py-12">
@@ -13,20 +24,7 @@ export default async function HomePage() {
           <p className="mt-6 text-lg text-ink/70">
             Importamos piezas unicas para hombre y mujer. Calidad premium, tallas variadas y envios seguros en toda Colombia.
           </p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <a
-              href="/productos"
-              className="rounded-full bg-terracotta text-cream px-6 py-3 uppercase tracking-[0.2em]"
-            >
-              Comprar ahora
-            </a>
-            <a
-              href="/registro"
-              className="rounded-full border border-ink px-6 py-3 uppercase tracking-[0.2em]"
-            >
-              Crear cuenta
-            </a>
-          </div>
+          <HomeHeroActions />
         </div>
         <div className="bg-ink text-cream rounded-[36px] p-8">
           <h2 className="font-display text-3xl">Envios rapidos en Colombia</h2>
@@ -42,15 +40,33 @@ export default async function HomePage() {
 
       <div className="mt-16">
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-3xl">Productos destacados</h2>
-          <a href="/productos" className="text-sm uppercase tracking-[0.2em]">Ver todo</a>
+          <h2 className="font-display text-3xl">Marcas</h2>
+          <a href="/productos" className="text-sm uppercase tracking-[0.2em]">Ver catalogo</a>
         </div>
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
-          {products.slice(0, 3).map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+        <div className="mt-8 overflow-hidden">
+          <div className="brand-marquee">
+            {track.map((brand, index) => (
+              <div
+                key={`${brand.name}-${index}`}
+                className="brand-tile"
+                aria-label={brand.name}
+                title={brand.name}
+              >
+                <img
+                  src={brand.logo}
+                  alt=""
+                  className="brand-logo"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  aria-hidden="true"
+                />
+                <span className="text-sm uppercase tracking-[0.2em]">{brand.name}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
   );
 }
+import HomeHeroActions from "../components/HomeHeroActions";

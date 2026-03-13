@@ -30,6 +30,10 @@ export default function CheckoutPage() {
   const [discount, setDiscount] = useState(0);
 
   const cityOptions = useMemo(() => departments[department] || [], [department]);
+  const [isBeforeTwoPm, setIsBeforeTwoPm] = useState(() => {
+    const now = new Date();
+    return now.getHours() < 14;
+  });
 
   useEffect(() => {
     if (!token) return;
@@ -53,9 +57,26 @@ export default function CheckoutPage() {
   }, [cityOptions, city]);
 
   const expressAllowed = department === "Antioquia" && ["Medellin", "Bello", "Sabaneta", "Itagui", "La Estrella"].includes(city);
-  const shippingCost = express && expressAllowed
+  const canUseExpress = expressAllowed && isBeforeTwoPm;
+  const shippingCost = express && canUseExpress
     ? city === "Medellin" ? 10000 : 20000
     : 0;
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setIsBeforeTwoPm(now.getHours() < 14);
+    };
+    tick();
+    const id = setInterval(tick, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!canUseExpress && express) {
+      setExpress(false);
+    }
+  }, [canUseExpress, express]);
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = Math.max(0, subtotal + shippingCost - discount);
@@ -87,11 +108,11 @@ export default function CheckoutPage() {
         department,
         city,
         addressLine,
-        express: express && expressAllowed
+        express: express && canUseExpress
       });
 
       const preference = await createPreference(order.id);
-      window.location.href = preference.initPoint;
+      window.open(preference.initPoint, "_blank");
     } catch (error) {
       show("No se pudo procesar el checkout", "error");
     } finally {
@@ -195,7 +216,7 @@ export default function CheckoutPage() {
             type="checkbox"
             checked={express}
             onChange={(e) => setExpress(e.target.checked)}
-            disabled={!expressAllowed}
+            disabled={!canUseExpress}
             className="mt-1"
           />
           <div>
@@ -205,6 +226,9 @@ export default function CheckoutPage() {
             </p>
             {!expressAllowed && (
               <p className="text-xs text-terracotta mt-1">Disponible solo en Antioquia (Medellin y municipios cercanos).</p>
+            )}
+            {expressAllowed && !isBeforeTwoPm && (
+              <p className="text-xs text-terracotta mt-1">Disponible solo antes de las 2:00 PM.</p>
             )}
           </div>
         </div>

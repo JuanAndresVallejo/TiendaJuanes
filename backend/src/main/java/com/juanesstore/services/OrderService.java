@@ -15,6 +15,8 @@ import com.juanesstore.repositories.AddressRepository;
 import com.juanesstore.repositories.CartItemRepository;
 import com.juanesstore.repositories.OrderRepository;
 import java.math.BigDecimal;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -51,8 +53,14 @@ public class OrderService {
       throw new IllegalArgumentException("Cart is empty");
     }
 
+    if (request.getAddressId() == null) {
+      if (isBlank(request.getDepartment()) || isBlank(request.getCity()) || isBlank(request.getAddressLine())) {
+        throw new IllegalArgumentException("Address information is required");
+      }
+    }
+
     Address address = resolveAddress(user, request);
-    Shipping shipping = calculateShipping(request.getDepartment(), request.getCity(), request.getExpress());
+    Shipping shipping = calculateShipping(address.getDepartment(), address.getCity(), request.getExpress());
 
     Order order = new Order();
     order.setUser(user);
@@ -137,9 +145,17 @@ public class OrderService {
     return address;
   }
 
+  private boolean isBlank(String value) {
+    return value == null || value.trim().isEmpty();
+  }
+
   private Shipping calculateShipping(String department, String city, Boolean express) {
     boolean expressRequested = express != null && express;
     if (!expressRequested) {
+      return new Shipping("STANDARD", BigDecimal.ZERO);
+    }
+    LocalTime now = LocalTime.now(ZoneId.systemDefault());
+    if (!now.isBefore(LocalTime.of(14, 0))) {
       return new Shipping("STANDARD", BigDecimal.ZERO);
     }
     if (!"Antioquia".equalsIgnoreCase(department)) {

@@ -1,17 +1,12 @@
 package com.juanesstore.dto;
 
-import jakarta.validation.constraints.NotBlank;
-
 public class CreateOrderRequest {
   private Long addressId;
 
-  @NotBlank
   private String department;
 
-  @NotBlank
   private String city;
 
-  @NotBlank
   private String addressLine;
 
   private Boolean express;

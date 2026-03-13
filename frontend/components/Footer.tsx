@@ -1,3 +1,5 @@
+import DevStatusBar from "./DevStatusBar";
+
 export default function Footer() {
   return (
     <footer className="bg-ink text-cream">
@@ -22,6 +24,7 @@ export default function Footer() {
           <p className="text-sm">ventas@tiendajuanes.com</p>
         </div>
       </div>
+      <DevStatusBar />
     </footer>
   );
 }

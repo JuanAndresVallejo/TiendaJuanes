@@ -1,4 +1,5 @@
 import { getToken } from "./auth";
+import { apiUrl } from "./api";
 
 export async function createPreference(orderId: number): Promise<{ preferenceId: string; initPoint: string }> {
   const token = getToken();
@@ -8,7 +9,7 @@ export async function createPreference(orderId: number): Promise<{ preferenceId:
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-  const res = await fetch("/api/payments/create-preference", {
+  const res = await fetch(apiUrl("/payments/create-preference"), {
     method: "POST",
     headers,
     body: JSON.stringify({ orderId })

@@ -1,4 +1,5 @@
 import { getToken } from "./auth";
+import { apiUrl } from "./api";
 
 export type CartItem = {
   id: number;
@@ -21,13 +22,13 @@ function authHeaders() {
 }
 
 export async function getCart(): Promise<CartItem[]> {
-  const res = await fetch("/api/cart", { headers: { ...authHeaders() } });
+  const res = await fetch(apiUrl("/cart"), { headers: { ...authHeaders() } });
   if (!res.ok) throw new Error("No se pudo cargar el carrito");
   return res.json();
 }
 
 export async function addToCart(productVariantId: number, quantity: number) {
-  const res = await fetch("/api/cart/add", {
+  const res = await fetch(apiUrl("/cart/add"), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ productVariantId, quantity })
@@ -36,7 +37,7 @@ export async function addToCart(productVariantId: number, quantity: number) {
 }
 
 export async function updateCart(productVariantId: number, quantity: number) {
-  const res = await fetch("/api/cart/update", {
+  const res = await fetch(apiUrl("/cart/update"), {
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ productVariantId, quantity })
@@ -45,7 +46,7 @@ export async function updateCart(productVariantId: number, quantity: number) {
 }
 
 export async function removeFromCart(productVariantId: number) {
-  const res = await fetch(`/api/cart/remove?productVariantId=${productVariantId}`, {
+  const res = await fetch(apiUrl(`/cart/remove?productVariantId=${productVariantId}`), {
     method: "DELETE",
     headers: { ...authHeaders() }
   });

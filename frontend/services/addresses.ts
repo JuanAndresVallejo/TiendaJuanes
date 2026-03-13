@@ -1,4 +1,5 @@
 import { getToken } from "./auth";
+import { apiUrl } from "./api";
 
 export type Address = {
   id: number;
@@ -18,7 +19,7 @@ function authHeaders() {
 }
 
 export async function getAddresses(): Promise<Address[]> {
-  const res = await fetch("/api/addresses", { headers: { ...authHeaders() } });
+  const res = await fetch(apiUrl("/addresses"), { headers: { ...authHeaders() } });
   if (!res.ok) throw new Error("No se pudieron cargar las direcciones");
   return res.json();
 }
@@ -29,7 +30,7 @@ export async function addAddress(payload: {
   addressLine: string;
   isDefault?: boolean;
 }) {
-  const res = await fetch("/api/addresses", {
+  const res = await fetch(apiUrl("/addresses"), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload)
@@ -39,7 +40,7 @@ export async function addAddress(payload: {
 }
 
 export async function setDefaultAddress(id: number) {
-  const res = await fetch(`/api/addresses/${id}/default`, {
+  const res = await fetch(apiUrl(`/addresses/${id}/default`), {
     method: "PUT",
     headers: { ...authHeaders() }
   });

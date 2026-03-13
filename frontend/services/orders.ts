@@ -1,4 +1,5 @@
 import { getToken } from "./auth";
+import { apiUrl } from "./api";
 
 export async function createOrder(payload: {
   addressId?: number | null;
@@ -14,7 +15,7 @@ export async function createOrder(payload: {
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-  const res = await fetch("/api/orders/create", {
+  const res = await fetch(apiUrl("/orders/create"), {
     method: "POST",
     headers,
     body: JSON.stringify(payload)
@@ -25,7 +26,7 @@ export async function createOrder(payload: {
 
 export async function getMyOrders() {
   const token = getToken();
-  const res = await fetch("/api/orders/my-orders", {
+  const res = await fetch(apiUrl("/orders/my-orders"), {
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   });
   if (!res.ok) throw new Error("No se pudieron cargar pedidos");
@@ -34,7 +35,7 @@ export async function getMyOrders() {
 
 export async function getOrderTracking(orderId: number) {
   const token = getToken();
-  const res = await fetch(`/api/orders/${orderId}/tracking`, {
+  const res = await fetch(apiUrl(`/orders/${orderId}/tracking`), {
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   });
   if (!res.ok) throw new Error("No se pudo cargar el tracking");

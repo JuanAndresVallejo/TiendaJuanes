@@ -12,16 +12,35 @@ export default function ProductsClient() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
     category: "",
     brand: "",
     size: "",
-    color: "",
     minPrice: "",
     maxPrice: ""
   });
 
   const hasFilters = useMemo(() => Object.values(filters).some((v) => v !== ""), [filters]);
+
+  const applyLocalFilters = (allProducts: Product[]) => {
+    const category = filters.category.trim().toLowerCase();
+    const brand = filters.brand.trim().toLowerCase();
+    const size = filters.size.trim().toLowerCase();
+    const minPrice = filters.minPrice ? Number(filters.minPrice) : undefined;
+    const maxPrice = filters.maxPrice ? Number(filters.maxPrice) : undefined;
+
+    return allProducts.filter((product) => {
+      const productCategory = (product.category || "").toLowerCase();
+      const productBrand = (product.brand || "").toLowerCase();
+      const matchesCategory = !category || productCategory.includes(category);
+      const matchesBrand = !brand || productBrand.includes(brand);
+      const matchesSize = !size || product.variants.some((variant) => variant.size.toLowerCase().includes(size));
+      const matchesMin = minPrice === undefined || product.basePrice >= minPrice;
+      const matchesMax = maxPrice === undefined || product.basePrice <= maxPrice;
+      return matchesCategory && matchesBrand && matchesSize && matchesMin && matchesMax;
+    });
+  };
 
   const load = async () => {
     setLoading(true);
@@ -30,27 +49,43 @@ export default function ProductsClient() {
         const data = await searchProducts(query.trim());
         setProducts(data);
       } else if (hasFilters) {
-        const data = await filterProducts({
-          category: filters.category || undefined,
-          brand: filters.brand || undefined,
-          size: filters.size || undefined,
-          color: filters.color || undefined,
-          minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
-          maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined
-        });
-        setProducts(data);
+        try {
+          const data = await filterProducts({
+            category: filters.category.trim() || undefined,
+            brand: filters.brand.trim() || undefined,
+            size: filters.size.trim() || undefined,
+            minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
+            maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined
+          });
+          setProducts(data);
+        } catch {
+          const all = await getProducts();
+          setProducts(applyLocalFilters(all));
+        }
       } else {
         const data = await getProducts();
         setProducts(data);
       }
+    } catch {
+      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    setPage(1);
     load();
-  }, [query, hasFilters]);
+  }, [query, hasFilters, filters]);
+
+  const pageSize = 20;
+  const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedProducts = products.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const categories = ["", "Hombre", "Mujer", "Calzado", "Accesorios"];
+  const brands = ["", "Levis", "Nike", "Adidas", "Puma", "Calvin Klein", "Tommy Hilfiger", "Guess", "Vans"];
+  const sizes = ["", "S", "M", "L", "XL"];
 
   return (
     <section className="max-w-6xl mx-auto px-6 py-12">
@@ -63,33 +98,42 @@ export default function ProductsClient() {
       </div>
 
       <div className="mt-10 grid gap-8 md:grid-cols-[260px_1fr]">
-        <aside className="bg-white/70 border border-sand rounded-3xl p-4 h-fit">
+        <aside className="bg-white/70 border border-sand rounded-3xl p-4 h-fit sticky top-24 self-start">
           <h2 className="font-display text-xl">Filtros</h2>
           <div className="mt-4 space-y-3 text-sm">
-            <input
-              placeholder="Categoria"
+            <select
               value={filters.category}
               onChange={(e) => setFilters({ ...filters, category: e.target.value })}
               className="w-full rounded-xl border border-sand bg-white/80 px-3 py-2"
-            />
-            <input
-              placeholder="Marca"
+            >
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category || "Categoria"}
+                </option>
+              ))}
+            </select>
+            <select
               value={filters.brand}
               onChange={(e) => setFilters({ ...filters, brand: e.target.value })}
               className="w-full rounded-xl border border-sand bg-white/80 px-3 py-2"
-            />
-            <input
-              placeholder="Talla"
+            >
+              {brands.map((brand) => (
+                <option key={brand} value={brand}>
+                  {brand || "Marca"}
+                </option>
+              ))}
+            </select>
+            <select
               value={filters.size}
               onChange={(e) => setFilters({ ...filters, size: e.target.value })}
               className="w-full rounded-xl border border-sand bg-white/80 px-3 py-2"
-            />
-            <input
-              placeholder="Color"
-              value={filters.color}
-              onChange={(e) => setFilters({ ...filters, color: e.target.value })}
-              className="w-full rounded-xl border border-sand bg-white/80 px-3 py-2"
-            />
+            >
+              {sizes.map((size) => (
+                <option key={size} value={size}>
+                  {size || "Talla"}
+                </option>
+              ))}
+            </select>
             <input
               placeholder="Precio minimo"
               value={filters.minPrice}
@@ -104,7 +148,7 @@ export default function ProductsClient() {
             />
             <button
               type="button"
-              onClick={() => setFilters({ category: "", brand: "", size: "", color: "", minPrice: "", maxPrice: "" })}
+              onClick={() => setFilters({ category: "", brand: "", size: "", minPrice: "", maxPrice: "" })}
               className="text-terracotta"
             >
               Limpiar filtros
@@ -120,11 +164,36 @@ export default function ProductsClient() {
               ))}
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-3">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-6 md:grid-cols-3">
+                {pagedProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+              {products.length > pageSize && (
+                <div className="mt-8 flex items-center justify-between text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    className="rounded-full border border-ink px-4 py-2 disabled:opacity-50"
+                    disabled={currentPage === 1}
+                  >
+                    Anterior
+                  </button>
+                  <span>
+                    Pagina {currentPage} de {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    className="rounded-full border border-ink px-4 py-2 disabled:opacity-50"
+                    disabled={currentPage === totalPages}
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

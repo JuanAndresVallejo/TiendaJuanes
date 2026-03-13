@@ -58,18 +58,21 @@ export default function CartPage() {
                 />
                 <div className="mt-2 flex items-center gap-3">
                   <button
+                    type="button"
                     onClick={() => handleUpdate(item.productVariantId, Math.max(1, item.quantity - 1))}
                     className="w-8 h-8 rounded-full border border-sand"
                   >
                     -
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleUpdate(item.productVariantId, item.quantity + 1)}
                     className="w-8 h-8 rounded-full border border-sand"
                   >
                     +
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleRemove(item.productVariantId)}
                     className="text-sm text-terracotta"
                   >

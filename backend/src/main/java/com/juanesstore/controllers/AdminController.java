@@ -3,6 +3,7 @@ package com.juanesstore.controllers;
 import com.juanesstore.dto.AdminOrderResponse;
 import com.juanesstore.dto.AdminCouponRequest;
 import com.juanesstore.dto.AdminCouponResponse;
+import com.juanesstore.dto.AdminUserResponse;
 import com.juanesstore.dto.AnalyticsResponse;
 import com.juanesstore.dto.DashboardStatsResponse;
 import com.juanesstore.dto.InventoryItemResponse;
@@ -192,6 +193,20 @@ public class AdminController {
   @GetMapping("/coupons")
   public ResponseEntity<List<AdminCouponResponse>> listCoupons() {
     return ResponseEntity.ok(adminCouponService.list());
+  }
+
+  @GetMapping("/users")
+  public ResponseEntity<List<AdminUserResponse>> listUsers() {
+    List<AdminUserResponse> users = userRepository.findAll().stream()
+        .map(user -> new AdminUserResponse(
+            user.getId(),
+            user.getFirstName() + " " + user.getLastName(),
+            user.getEmail(),
+            user.getRole().name(),
+            user.getCreatedAt()
+        ))
+        .collect(Collectors.toList());
+    return ResponseEntity.ok(users);
   }
 
   @PostMapping("/coupons")

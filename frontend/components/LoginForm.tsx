@@ -16,8 +16,9 @@ export default function LoginForm({ redirect }: { redirect?: string }) {
       await login(email, password);
       show("Inicio de sesión exitoso");
       window.location.href = redirect || "/";
-    } catch {
-      show("Credenciales inválidas", "error");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Credenciales inválidas";
+      show(message, "error");
     } finally {
       setLoading(false);
     }

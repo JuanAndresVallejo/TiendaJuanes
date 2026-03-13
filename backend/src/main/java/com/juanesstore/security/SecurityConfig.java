@@ -30,6 +30,7 @@ public class SecurityConfig {
         )
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/api/auth/**").permitAll()
+            .requestMatchers("/api/health").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
             .requestMatchers("/api/payments/webhook").permitAll()
             .requestMatchers("/api/coupons/validate").permitAll()

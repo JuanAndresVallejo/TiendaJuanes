@@ -37,6 +37,7 @@ services:
       context: ./frontend
     environment:
       NEXT_PUBLIC_API_URL: /api
+      NEXT_PUBLIC_STATUS_BANNER: "true"
     depends_on:
       - backend
     ports:

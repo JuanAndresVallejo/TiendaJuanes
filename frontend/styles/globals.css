@@ -16,3 +16,39 @@ body {
   background: #c65d3a;
   color: #f6f2ea;
 }
+
+.brand-marquee {
+  display: flex;
+  gap: 16px;
+  width: max-content;
+  animation: brand-scroll 22s linear infinite;
+}
+
+.brand-tile {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-radius: 9999px;
+  border: 1px solid #eadfcc;
+  background: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+  min-width: 140px;
+}
+
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
+@keyframes brand-scroll {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

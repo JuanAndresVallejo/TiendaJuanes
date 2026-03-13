@@ -46,6 +46,10 @@ public class PaymentService {
     Order order = orderRepository.findById(orderId)
         .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
+    if (!mercadoPagoService.isConfigured()) {
+      return new CreatePreferenceResponse("demo", "/pago-demo");
+    }
+
     Preference preference = mercadoPagoService.createPreference(order);
     return new CreatePreferenceResponse(preference.getId(), preference.getInitPoint());
   }

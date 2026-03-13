@@ -52,4 +52,8 @@ public class MercadoPagoService {
     }
     MercadoPagoConfig.setAccessToken(accessToken);
   }
+
+  public boolean isConfigured() {
+    return accessToken != null && !accessToken.isBlank();
+  }
 }
