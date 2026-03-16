@@ -64,6 +64,7 @@ const nextConfig = {
 ```
 
 Nota: el carrusel de marcas usa logos locales en `frontend/public/brands`, no requiere dominios remotos.
+Si agregas imágenes externas (banners o productos), incluye los dominios en `remotePatterns`.
 
 3) Construye el sitio estático:
 
@@ -107,3 +108,5 @@ Para producción completa se recomienda:
 - Frontend en Vercel o Netlify.
 - Backend en Render, Railway, Fly.io o un VPS propio.
 - PostgreSQL administrado (Railway, Supabase, Render).
+
+Nota: el banner de estado en footer es solo para desarrollo y debe ir en `false` en producción.

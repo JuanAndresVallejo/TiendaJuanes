@@ -5,15 +5,20 @@ import com.juanesstore.dto.OrderItemResponse;
 import com.juanesstore.dto.OrderResponse;
 import com.juanesstore.models.Address;
 import com.juanesstore.models.CartItem;
+import com.juanesstore.models.Coupon;
 import com.juanesstore.models.Order;
 import com.juanesstore.models.OrderItem;
 import com.juanesstore.models.OrderStatus;
+import com.juanesstore.models.Payment;
 import com.juanesstore.models.PaymentStatus;
 import com.juanesstore.models.ProductVariant;
 import com.juanesstore.models.User;
 import com.juanesstore.repositories.AddressRepository;
 import com.juanesstore.repositories.CartItemRepository;
+import com.juanesstore.repositories.CouponRepository;
 import com.juanesstore.repositories.OrderRepository;
+import com.juanesstore.repositories.PaymentRepository;
+import com.juanesstore.repositories.ProductVariantRepository;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -31,17 +36,29 @@ public class OrderService {
   private final OrderRepository orderRepository;
   private final CartItemRepository cartItemRepository;
   private final AddressRepository addressRepository;
+  private final ProductVariantRepository productVariantRepository;
+  private final CouponService couponService;
+  private final CouponRepository couponRepository;
+  private final PaymentRepository paymentRepository;
   private final EmailService emailService;
   private final OrderTrackingService orderTrackingService;
 
   public OrderService(OrderRepository orderRepository,
                       CartItemRepository cartItemRepository,
                       AddressRepository addressRepository,
+                      ProductVariantRepository productVariantRepository,
+                      CouponService couponService,
+                      CouponRepository couponRepository,
+                      PaymentRepository paymentRepository,
                       EmailService emailService,
                       OrderTrackingService orderTrackingService) {
     this.orderRepository = orderRepository;
     this.cartItemRepository = cartItemRepository;
     this.addressRepository = addressRepository;
+    this.productVariantRepository = productVariantRepository;
+    this.couponService = couponService;
+    this.couponRepository = couponRepository;
+    this.paymentRepository = paymentRepository;
     this.emailService = emailService;
     this.orderTrackingService = orderTrackingService;
   }
@@ -76,6 +93,8 @@ public class OrderService {
       if (variant.getStock() < cartItem.getQuantity()) {
         throw new IllegalArgumentException("Insufficient stock for variant " + variant.getId());
       }
+      variant.setStock(variant.getStock() - cartItem.getQuantity());
+      productVariantRepository.save(variant);
       BigDecimal price = variant.getPrice();
       BigDecimal line = price.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
       total = total.add(line);
@@ -88,25 +107,50 @@ public class OrderService {
       order.getItems().add(orderItem);
     }
 
-    order.setTotalAmount(total.add(shipping.cost));
+    BigDecimal orderSubtotal = total.add(shipping.cost);
+    BigDecimal discount = BigDecimal.ZERO;
+    if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
+      var validation = couponService.validate(
+          new com.juanesstore.dto.CouponValidateRequest(request.getCouponCode(), orderSubtotal)
+      );
+      if (!validation.getValid()) {
+        throw new IllegalArgumentException(validation.getMessage());
+      }
+      discount = validation.getDiscount();
+      Coupon coupon = couponRepository.findByCodeIgnoreCase(request.getCouponCode())
+          .orElseThrow(() -> new IllegalArgumentException("El cupón no es válido"));
+      couponService.markUsed(coupon);
+    }
+
+    order.setTotalAmount(orderSubtotal.subtract(discount));
     Order saved = orderRepository.save(order);
     cartItemRepository.deleteByUser(user);
     orderTrackingService.recordStatus(saved, OrderStatus.PENDING);
     logger.info("Order created id={} user={}", saved.getId(), user.getEmail());
     emailService.sendOrderConfirmation(saved);
+
+    String paymentMethod = request.getPaymentMethod() == null ? "MERCADOPAGO" : request.getPaymentMethod();
+    if (!"MERCADOPAGO".equalsIgnoreCase(paymentMethod)) {
+      Payment payment = new Payment();
+      payment.setOrder(saved);
+      payment.setPaymentMethod(paymentMethod.toUpperCase());
+      payment.setStatus(PaymentStatus.PENDING);
+      paymentRepository.save(payment);
+    }
+
     return toResponse(saved);
   }
 
   @Transactional(readOnly = true)
   public List<OrderResponse> getMyOrders(User user) {
-    return orderRepository.findByUserOrderByCreatedAtDesc(user).stream()
+    return orderRepository.findByUserWithItems(user).stream()
         .map(this::toResponse)
         .collect(Collectors.toList());
   }
 
   @Transactional(readOnly = true)
   public OrderResponse getOrderById(User user, Long id) {
-    Order order = orderRepository.findById(id)
+    Order order = orderRepository.findOrderWithItems(id)
         .orElseThrow(() -> new IllegalArgumentException("Order not found"));
     if (!order.getUser().getId().equals(user.getId())) {
       throw new IllegalArgumentException("Order not found");
@@ -114,11 +158,37 @@ public class OrderService {
     return toResponse(order);
   }
 
+  @Transactional
+  public void reorder(User user, Long orderId) {
+    Order order = orderRepository.findOrderWithItems(orderId)
+        .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+    if (!order.getUser().getId().equals(user.getId())) {
+      throw new IllegalArgumentException("Order not found");
+    }
+    for (OrderItem item : order.getItems()) {
+      ProductVariant variant = item.getProductVariant();
+      if (variant.getStock() < item.getQuantity()) {
+        throw new IllegalArgumentException("Insufficient stock for variant " + variant.getId());
+      }
+      CartItem cartItem = cartItemRepository.findByUserIdAndProductVariantId(user.getId(), variant.getId())
+          .orElseGet(() -> {
+            CartItem created = new CartItem();
+            created.setUser(user);
+            created.setProductVariant(variant);
+            created.setQuantity(0);
+            return created;
+          });
+      cartItem.setQuantity(cartItem.getQuantity() + item.getQuantity());
+      cartItemRepository.save(cartItem);
+    }
+  }
+
   private OrderResponse toResponse(Order order) {
     List<OrderItemResponse> items = order.getItems().stream()
         .map(item -> new OrderItemResponse(
             item.getProductVariant().getId(),
             item.getProductVariant().getProduct().getName(),
+            item.getProductVariant().getProduct().getRefCode(),
             item.getProductVariant().getColor(),
             item.getProductVariant().getSize(),
             item.getQuantity(),

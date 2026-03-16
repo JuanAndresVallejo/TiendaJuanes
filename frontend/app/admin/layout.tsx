@@ -27,6 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin/orders">Pedidos</Link>
           <Link href="/admin/inventory">Inventario</Link>
           <Link href="/admin/coupons">Cupones</Link>
+          <Link href="/admin/banners">Banners</Link>
           <Link href="/admin/users">Usuarios</Link>
         </nav>
       </div>

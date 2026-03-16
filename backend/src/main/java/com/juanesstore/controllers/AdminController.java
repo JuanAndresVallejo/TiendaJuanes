@@ -5,36 +5,41 @@ import com.juanesstore.dto.AdminCouponRequest;
 import com.juanesstore.dto.AdminCouponResponse;
 import com.juanesstore.dto.AdminUserResponse;
 import com.juanesstore.dto.AnalyticsResponse;
+import com.juanesstore.dto.BannerRequest;
+import com.juanesstore.dto.BannerResponse;
 import com.juanesstore.dto.DashboardStatsResponse;
 import com.juanesstore.dto.InventoryItemResponse;
+import com.juanesstore.dto.OrderDetailDTO;
 import com.juanesstore.dto.ProductCreateRequest;
 import com.juanesstore.dto.ProductResponse;
 import com.juanesstore.dto.UpdateInventoryRequest;
 import com.juanesstore.dto.UpdateOrderStatusRequest;
 import com.juanesstore.models.Order;
-import com.juanesstore.models.OrderItem;
 import com.juanesstore.models.OrderStatus;
 import com.juanesstore.models.Payment;
 import com.juanesstore.models.ProductVariant;
+import com.juanesstore.repositories.ChartPointProjection;
 import com.juanesstore.repositories.OrderRepository;
 import com.juanesstore.repositories.PaymentRepository;
 import com.juanesstore.repositories.ProductVariantRepository;
 import com.juanesstore.repositories.UserRepository;
+import com.juanesstore.services.AdminOrderService;
+import com.juanesstore.services.BannerService;
 import com.juanesstore.services.ProductService;
 import com.juanesstore.services.AdminCouponService;
 import com.juanesstore.services.EmailService;
 import com.juanesstore.services.OrderTrackingService;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -47,6 +52,8 @@ public class AdminController {
   private final AdminCouponService adminCouponService;
   private final OrderTrackingService orderTrackingService;
   private final EmailService emailService;
+  private final AdminOrderService adminOrderService;
+  private final BannerService bannerService;
 
   public AdminController(ProductService productService,
                          OrderRepository orderRepository,
@@ -55,7 +62,9 @@ public class AdminController {
                          PaymentRepository paymentRepository,
                          AdminCouponService adminCouponService,
                          OrderTrackingService orderTrackingService,
-                         EmailService emailService) {
+                         EmailService emailService,
+                         AdminOrderService adminOrderService,
+                         BannerService bannerService) {
     this.productService = productService;
     this.orderRepository = orderRepository;
     this.productVariantRepository = productVariantRepository;
@@ -64,6 +73,8 @@ public class AdminController {
     this.adminCouponService = adminCouponService;
     this.orderTrackingService = orderTrackingService;
     this.emailService = emailService;
+    this.adminOrderService = adminOrderService;
+    this.bannerService = bannerService;
   }
 
   @PostMapping("/products")
@@ -90,13 +101,21 @@ public class AdminController {
 
   @GetMapping("/orders")
   @Transactional(readOnly = true)
-  public ResponseEntity<List<AdminOrderResponse>> getOrders() {
-    List<Order> orders = orderRepository.findAll();
+  public ResponseEntity<List<AdminOrderResponse>> getOrders(@RequestParam(defaultValue = "0") int page,
+                                                            @RequestParam(defaultValue = "20") int size) {
+    List<Order> orders = orderRepository.findAll(PageRequest.of(page, size, Sort.by("createdAt").descending()))
+        .getContent();
+    Map<Long, Payment> payments = paymentRepository.findByOrderIdIn(
+            orders.stream().map(Order::getId).collect(Collectors.toList()))
+        .stream()
+        .collect(Collectors.toMap(payment -> payment.getOrder().getId(), payment -> payment));
+
     List<AdminOrderResponse> responses = orders.stream()
         .map(order -> {
-          Payment payment = paymentRepository.findByOrderId(order.getId()).orElse(null);
+          Payment payment = payments.get(order.getId());
           String customerName = order.getUser().getFirstName() + " " + order.getUser().getLastName();
           String paymentMethod = payment == null ? "" : payment.getPaymentMethod();
+          java.time.Instant paymentDate = payment == null ? null : payment.getCreatedAt();
           return new AdminOrderResponse(
               order.getId(),
               customerName,
@@ -104,12 +123,19 @@ public class AdminController {
               order.getTotalAmount(),
               order.getStatus().name(),
               paymentMethod,
+              paymentDate,
               order.getShippingAddress(),
               order.getNotes()
           );
         })
         .collect(Collectors.toList());
     return ResponseEntity.ok(responses);
+  }
+
+  @GetMapping("/orders/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<OrderDetailDTO> getOrderDetail(@PathVariable Long id) {
+    return ResponseEntity.ok(adminOrderService.getOrderDetail(id));
   }
 
   @PutMapping("/orders/update-status")
@@ -137,7 +163,10 @@ public class AdminController {
             variant.getColor(),
             variant.getSize(),
             variant.getSku(),
-            variant.getStock()
+            variant.getStock(),
+            variant.getProduct().getImages().isEmpty()
+                ? null
+                : variant.getProduct().getImages().get(0).getImageUrl()
         ))
         .collect(Collectors.toList());
     return ResponseEntity.ok(items);
@@ -159,37 +188,28 @@ public class AdminController {
   }
 
   @GetMapping("/dashboard/stats")
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<DashboardStatsResponse> getDashboardStats() {
-    return ResponseEntity.ok(buildStats(orderRepository.findAll()));
+    return ResponseEntity.ok(buildStats());
   }
 
   @GetMapping("/analytics")
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<AnalyticsResponse> getAnalytics() {
-    List<Order> orders = orderRepository.findAll();
-    DashboardStatsResponse stats = buildStats(orders);
-
-    Map<String, Long> topCategories = orders.stream()
-        .flatMap(o -> o.getItems().stream())
-        .collect(Collectors.groupingBy(item -> item.getProductVariant().getProduct().getCategory(),
-            Collectors.summingLong(OrderItem::getQuantity)));
-
-    List<DashboardStatsResponse.ChartPoint> categories = topCategories.entrySet().stream()
-        .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-        .limit(5)
-        .map(e -> new DashboardStatsResponse.ChartPoint(e.getKey(), BigDecimal.valueOf(e.getValue())))
+    DashboardStatsResponse stats = buildStats();
+    List<DashboardStatsResponse.ChartPoint> categories = orderRepository.getTopCategories().stream()
+        .map(this::toChartPoint)
         .collect(Collectors.toList());
 
     long newCustomers = userRepository.count();
 
-    AnalyticsResponse response = new AnalyticsResponse(
+    return ResponseEntity.ok(new AnalyticsResponse(
         stats.getSalesByDay(),
         stats.getSalesByMonth(),
         stats.getTopProducts(),
         categories,
         newCustomers
-    );
-
-    return ResponseEntity.ok(response);
+    ));
   }
 
   @GetMapping("/coupons")
@@ -228,62 +248,53 @@ public class AdminController {
     return ResponseEntity.ok().build();
   }
 
-  private DashboardStatsResponse buildStats(List<Order> orders) {
-    LocalDate today = LocalDate.now(ZoneId.systemDefault());
-    BigDecimal salesToday = orders.stream()
-        .filter(o -> o.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDate().equals(today))
-        .map(Order::getTotalAmount)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  @GetMapping("/banners")
+  public ResponseEntity<List<BannerResponse>> getBanners() {
+    return ResponseEntity.ok(bannerService.getAll());
+  }
 
-    LocalDate monthStart = today.withDayOfMonth(1);
-    BigDecimal salesMonth = orders.stream()
-        .filter(o -> !o.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDate().isBefore(monthStart))
-        .map(Order::getTotalAmount)
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  @PostMapping("/banners")
+  public ResponseEntity<BannerResponse> createBanner(@Valid @RequestBody BannerRequest request) {
+    return ResponseEntity.ok(bannerService.create(request));
+  }
 
-    long totalOrders = orders.size();
-    long productsSold = orders.stream()
-        .flatMap(o -> o.getItems().stream())
-        .mapToLong(OrderItem::getQuantity)
-        .sum();
+  @PutMapping("/banners/{id}")
+  public ResponseEntity<BannerResponse> updateBanner(@PathVariable Long id,
+                                                     @Valid @RequestBody BannerRequest request) {
+    return ResponseEntity.ok(bannerService.update(id, request));
+  }
+
+  @DeleteMapping("/banners/{id}")
+  public ResponseEntity<Void> deleteBanner(@PathVariable Long id) {
+    bannerService.delete(id);
+    return ResponseEntity.ok().build();
+  }
+
+  private DashboardStatsResponse buildStats() {
+    BigDecimal salesToday = orderRepository.getSalesToday();
+    BigDecimal salesMonth = orderRepository.getSalesMonth();
+    long totalOrders = orderRepository.countAllOrders();
+    long productsSold = orderRepository.getProductsSold();
     long totalCustomers = userRepository.count();
 
-    Map<LocalDate, BigDecimal> salesByDay = orders.stream()
-        .collect(Collectors.groupingBy(
-            o -> o.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDate(),
-            Collectors.mapping(Order::getTotalAmount, Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))
-        ));
-
-    List<DashboardStatsResponse.ChartPoint> daily = salesByDay.entrySet().stream()
-        .sorted(Map.Entry.comparingByKey())
-        .map(e -> new DashboardStatsResponse.ChartPoint(e.getKey().toString(), e.getValue()))
+    List<DashboardStatsResponse.ChartPoint> daily = orderRepository.getSalesByDay().stream()
+        .map(this::toChartPoint)
         .collect(Collectors.toList());
 
-    Map<String, BigDecimal> salesByMonth = orders.stream()
-        .collect(Collectors.groupingBy(
-            o -> o.getCreatedAt().atZone(ZoneId.systemDefault()).getYear() + "-" +
-                String.format("%02d", o.getCreatedAt().atZone(ZoneId.systemDefault()).getMonthValue()),
-            Collectors.mapping(Order::getTotalAmount, Collectors.reducing(BigDecimal.ZERO, BigDecimal::add))
-        ));
-
-    List<DashboardStatsResponse.ChartPoint> monthly = salesByMonth.entrySet().stream()
-        .sorted(Map.Entry.comparingByKey())
-        .map(e -> new DashboardStatsResponse.ChartPoint(e.getKey(), e.getValue()))
+    List<DashboardStatsResponse.ChartPoint> monthly = orderRepository.getSalesByMonth().stream()
+        .map(this::toChartPoint)
         .collect(Collectors.toList());
 
-    Map<String, Long> topProducts = orders.stream()
-        .flatMap(o -> o.getItems().stream())
-        .collect(Collectors.groupingBy(item -> item.getProductVariant().getProduct().getName(),
-            Collectors.summingLong(OrderItem::getQuantity)));
-
-    List<DashboardStatsResponse.ChartPoint> top = topProducts.entrySet().stream()
-        .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-        .limit(5)
-        .map(e -> new DashboardStatsResponse.ChartPoint(e.getKey(), BigDecimal.valueOf(e.getValue())))
+    List<DashboardStatsResponse.ChartPoint> top = orderRepository.getTopProducts().stream()
+        .map(this::toChartPoint)
         .collect(Collectors.toList());
 
     return new DashboardStatsResponse(
         salesToday, salesMonth, totalOrders, productsSold, totalCustomers, daily, monthly, top
     );
+  }
+
+  private DashboardStatsResponse.ChartPoint toChartPoint(ChartPointProjection projection) {
+    return new DashboardStatsResponse.ChartPoint(projection.getLabel(), projection.getValue());
   }
 }

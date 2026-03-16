@@ -6,6 +6,8 @@ import { getInventory, updateInventory } from "../../../services/admin";
 export default function AdminInventoryPage() {
   const [items, setItems] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [adjustments, setAdjustments] = useState<Record<number, string>>({});
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
 
   const load = async () => {
     try {
@@ -22,8 +24,15 @@ export default function AdminInventoryPage() {
     load();
   }, []);
 
-  const adjust = async (productVariantId: number, delta: number) => {
+  const adjust = async (productVariantId: number) => {
+    const raw = adjustments[productVariantId];
+    const delta = Number(raw);
+    if (!Number.isFinite(delta) || delta === 0) {
+      setError("Ingresa un ajuste válido (ej: 10 o -5)");
+      return;
+    }
     await updateInventory({ productVariantId, delta });
+    setAdjustments((prev) => ({ ...prev, [productVariantId]: "" }));
     await load();
   };
 
@@ -50,7 +59,18 @@ export default function AdminInventoryPage() {
               return (
               <tr key={item.productVariantId} className="border-t border-sand/60">
                 <td className="p-3">
-                  {item.productName}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpanded((prev) => ({
+                        ...prev,
+                        [item.productVariantId]: !prev[item.productVariantId]
+                      }))
+                    }
+                    className="text-left"
+                  >
+                    {item.productName}
+                  </button>
                   {lowStock && <span className="ml-2 text-xs text-terracotta">Bajo stock</span>}
                 </td>
                 <td className="p-3">{item.refCode}</td>
@@ -58,11 +78,41 @@ export default function AdminInventoryPage() {
                 <td className="p-3">{item.size}</td>
                 <td className="p-3">{item.sku}</td>
                 <td className={`p-3 ${lowStock ? "text-terracotta font-semibold" : ""}`}>{item.stock}</td>
-                <td className="p-3 flex gap-2">
-                  <button onClick={() => adjust(item.productVariantId, 1)} className="text-olive">+1</button>
-                  <button onClick={() => adjust(item.productVariantId, -1)} className="text-terracotta">-1</button>
+                <td className="p-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={adjustments[item.productVariantId] ?? ""}
+                      onChange={(e) =>
+                        setAdjustments((prev) => ({ ...prev, [item.productVariantId]: e.target.value }))
+                      }
+                      placeholder="+20 o -15"
+                      className="w-24 rounded-lg border border-sand bg-white/80 px-2 py-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => adjust(item.productVariantId)}
+                      className="rounded-full border border-ink px-3 py-1 text-xs uppercase tracking-[0.2em]"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
                 </td>
               </tr>
+              {expanded[item.productVariantId] && (
+                <tr className="border-t border-sand/60 bg-cream/40">
+                  <td colSpan={7} className="p-3">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.productName}
+                        className="w-24 h-28 object-cover rounded-xl border border-sand"
+                      />
+                    ) : (
+                      <span className="text-xs text-ink/60">Sin imagen disponible</span>
+                    )}
+                  </td>
+                </tr>
+              )}
             );})}
           </tbody>
         </table>

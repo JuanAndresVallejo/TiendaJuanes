@@ -21,14 +21,39 @@ export type Product = {
   description: string;
   brand: string | null;
   category: string | null;
+  featured: boolean;
+  tags: string | null;
+  discountPercentage: number;
   basePrice: number;
   createdAt: string;
   variants: ProductVariant[];
   images: ProductImage[];
 };
 
+export type ProductPage = {
+  items: Product[];
+  page: number;
+  size: number;
+  totalPages: number;
+  totalElements: number;
+};
+
 export async function getProducts(): Promise<Product[]> {
   return apiGet<Product[]>("/products");
+}
+
+export async function getProductsPaged(params: {
+  page: number;
+  size: number;
+  sort?: string;
+  dir?: string;
+}): Promise<ProductPage> {
+  const query = new URLSearchParams();
+  query.set("page", String(params.page));
+  query.set("size", String(params.size));
+  if (params.sort) query.set("sort", params.sort);
+  if (params.dir) query.set("dir", params.dir);
+  return apiGet<ProductPage>(`/products/paged?${query.toString()}`);
 }
 
 export async function getProduct(id: string): Promise<Product | null> {
@@ -39,8 +64,8 @@ export async function getProduct(id: string): Promise<Product | null> {
   }
 }
 
-export async function searchProducts(query: string): Promise<Product[]> {
-  return apiGet<Product[]>(`/products/search?q=${encodeURIComponent(query)}`);
+export async function searchProducts(query: string, page = 0, size = 20): Promise<ProductPage> {
+  return apiGet<ProductPage>(`/products/search?q=${encodeURIComponent(query)}&page=${page}&size=${size}`);
 }
 
 export async function filterProducts(params: {
@@ -50,10 +75,32 @@ export async function filterProducts(params: {
   color?: string;
   minPrice?: number;
   maxPrice?: number;
-}): Promise<Product[]> {
+  page?: number;
+  pageSize?: number;
+}): Promise<ProductPage> {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== "") query.set(key, String(value));
   });
-  return apiGet<Product[]>(`/products/filter?${query.toString()}`);
+  return apiGet<ProductPage>(`/products/filter?${query.toString()}`);
+}
+
+export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
+  return apiGet<Product[]>(`/products/featured?limit=${limit}`);
+}
+
+export async function getNewestProducts(limit = 8): Promise<Product[]> {
+  return apiGet<Product[]>(`/products/new?limit=${limit}`);
+}
+
+export async function getBestSellers(limit = 8): Promise<Product[]> {
+  return apiGet<Product[]>(`/products/best-sellers?limit=${limit}`);
+}
+
+export async function getRelatedProducts(id: string, limit = 6): Promise<Product[]> {
+  return apiGet<Product[]>(`/products/${id}/related?limit=${limit}`);
+}
+
+export async function getProductsByIds(ids: string): Promise<Product[]> {
+  return apiGet<Product[]>(`/products/by-ids?ids=${encodeURIComponent(ids)}`);
 }

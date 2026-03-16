@@ -46,3 +46,26 @@ export async function setDefaultAddress(id: number) {
   });
   if (!res.ok) throw new Error("No se pudo actualizar la direccion");
 }
+
+export async function updateAddress(id: number, payload: {
+  department: string;
+  city: string;
+  addressLine: string;
+  isDefault?: boolean;
+}) {
+  const res = await fetch(apiUrl(`/addresses/${id}`), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error("No se pudo actualizar la direccion");
+  return res.json();
+}
+
+export async function deleteAddress(id: number) {
+  const res = await fetch(apiUrl(`/addresses/${id}`), {
+    method: "DELETE",
+    headers: { ...authHeaders() }
+  });
+  if (!res.ok) throw new Error("No se pudo eliminar la direccion");
+}

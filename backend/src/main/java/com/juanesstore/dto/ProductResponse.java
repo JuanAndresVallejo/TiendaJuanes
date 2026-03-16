@@ -11,12 +11,16 @@ public class ProductResponse {
   private String description;
   private String brand;
   private String category;
+  private Boolean featured;
+  private String tags;
+  private Integer discountPercentage;
   private BigDecimal basePrice;
   private Instant createdAt;
   private List<ProductVariantResponse> variants;
   private List<ProductImageResponse> images;
 
   public ProductResponse(Long id, String name, String refCode, String description, String brand, String category,
+                         Boolean featured, String tags, Integer discountPercentage,
                          BigDecimal basePrice, Instant createdAt,
                          List<ProductVariantResponse> variants, List<ProductImageResponse> images) {
     this.id = id;
@@ -25,6 +29,9 @@ public class ProductResponse {
     this.description = description;
     this.brand = brand;
     this.category = category;
+    this.featured = featured;
+    this.tags = tags;
+    this.discountPercentage = discountPercentage;
     this.basePrice = basePrice;
     this.createdAt = createdAt;
     this.variants = variants;
@@ -53,6 +60,18 @@ public class ProductResponse {
 
   public String getCategory() {
     return category;
+  }
+
+  public Boolean getFeatured() {
+    return featured;
+  }
+
+  public String getTags() {
+    return tags;
+  }
+
+  public Integer getDiscountPercentage() {
+    return discountPercentage;
   }
 
   public BigDecimal getBasePrice() {

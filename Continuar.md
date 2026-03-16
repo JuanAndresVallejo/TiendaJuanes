@@ -4,6 +4,9 @@
 El ecommerce está construido y funcional, con backend en Spring Boot + PostgreSQL y frontend en Next.js + Tailwind.  
 Se añadieron cupones, tracking, emails, analytics, cache Redis, y mejoras de seguridad.
 Se incorporó un **banner de estado en el footer (solo dev)** que consulta `/api/health` para verificar servicios.
+Se agregó **detalle de pedidos para admin** y mejoras de performance en queries (N+1, dashboard).
+Se implementaron features tipo Shopify: **destacados, más vendidos, nuevos, tags, descuentos, relacionados y recientemente vistos**.
+Checkout ahora soporta **PSE (MercadoPago), Transferencia y Contraentrega** con validación de cupones.
 
 ---
 
@@ -51,11 +54,16 @@ Rutas clave:
 - `/mis-pedidos`, `/mis-pedidos/[id]`
 - `/mi-perfil` (perfil cliente)
 - `/admin/*` con panel completo
+- `/admin/orders/[id]` (detalle de pedido para empaque)
 
 UI reciente:
 - Carrusel de marcas con logos locales en `frontend/public/brands`
 - Filtros en productos con selects (categoría, marca, talla)
 - Botones de redes: WhatsApp, Instagram y TikTok
+- Checklist de empaque en detalle de pedido admin (estado visual)
+- Catálogo paginado (20 por página) y ordenado (precio/nombre/ventas)
+- Carrito con contador en navbar y actualización sin refrescar
+- Productos sin stock visibles pero bloqueados para compra
 
 ---
 
@@ -79,3 +87,6 @@ Dev-only:
 2. Conectar MercadoPago real
 3. Configurar SMTP real para emails
 4. Deploy en servidor propio
+5. (Opcional) Persistir checklist de empaque en backend
+6. (Opcional) Exportación de reportes y mejoras avanzadas de admin
+7. (Opcional) Historial de inventario y notas internas de pedidos

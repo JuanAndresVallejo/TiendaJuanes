@@ -25,9 +25,10 @@ public class JwtUtils {
   public String generateToken(String email, String role) {
     Instant now = Instant.now();
     Instant exp = now.plusSeconds(expirationMinutes * 60);
+    String normalizedRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
     return Jwts.builder()
         .setSubject(email)
-        .claim("role", role)
+        .claim("role", normalizedRole)
         .setIssuedAt(Date.from(now))
         .setExpiration(Date.from(exp))
         .signWith(key, SignatureAlgorithm.HS256)

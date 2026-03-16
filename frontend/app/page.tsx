@@ -1,3 +1,7 @@
+import HomePromoBanner from "../components/HomePromoBanner";
+import HomeShowcase from "../components/HomeShowcase";
+import HomeHeroActions from "../components/HomeHeroActions";
+
 export default async function HomePage() {
   const brands = [
     { name: "Levis", short: "LEVIS", width: 96 },
@@ -77,7 +81,8 @@ export default async function HomePage() {
           </div>
         </div>
       </div>
+      <HomePromoBanner />
+      <HomeShowcase />
     </section>
   );
 }
-import HomeHeroActions from "../components/HomeHeroActions";

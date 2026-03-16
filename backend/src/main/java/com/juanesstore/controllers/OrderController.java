@@ -63,4 +63,11 @@ public class OrderController {
         .map(h -> new OrderStatusHistoryResponse(h.getStatus().name(), h.getCreatedAt()))
         .collect(Collectors.toList()));
   }
+
+  @PostMapping("/{id}/reorder")
+  public ResponseEntity<Void> reorder(@PathVariable Long id) {
+    User user = securityUtils.getCurrentUser();
+    orderService.reorder(user, id);
+    return ResponseEntity.ok().build();
+  }
 }

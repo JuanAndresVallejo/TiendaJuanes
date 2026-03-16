@@ -26,6 +26,15 @@ public class Product {
 
   private String category;
 
+  @Column(nullable = false)
+  private Boolean featured = false;
+
+  @Column(name = "tags", columnDefinition = "TEXT")
+  private String tags;
+
+  @Column(name = "discount_percentage", nullable = false)
+  private Integer discountPercentage = 0;
+
   @Column(name = "base_price", nullable = false)
   private BigDecimal basePrice;
 
@@ -33,9 +42,11 @@ public class Product {
   private Instant createdAt;
 
   @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+  @org.hibernate.annotations.BatchSize(size = 20)
   private List<ProductVariant> variants = new ArrayList<>();
 
   @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+  @org.hibernate.annotations.BatchSize(size = 20)
   private List<ProductImage> images = new ArrayList<>();
 
   @PrePersist
@@ -89,6 +100,30 @@ public class Product {
 
   public void setCategory(String category) {
     this.category = category;
+  }
+
+  public Boolean getFeatured() {
+    return featured;
+  }
+
+  public void setFeatured(Boolean featured) {
+    this.featured = featured;
+  }
+
+  public String getTags() {
+    return tags;
+  }
+
+  public void setTags(String tags) {
+    this.tags = tags;
+  }
+
+  public Integer getDiscountPercentage() {
+    return discountPercentage;
+  }
+
+  public void setDiscountPercentage(Integer discountPercentage) {
+    this.discountPercentage = discountPercentage;
   }
 
   public BigDecimal getBasePrice() {

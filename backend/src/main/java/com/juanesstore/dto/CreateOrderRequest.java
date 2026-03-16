@@ -13,6 +13,10 @@ public class CreateOrderRequest {
 
   private String notes;
 
+  private String couponCode;
+
+  private String paymentMethod;
+
   public Long getAddressId() {
     return addressId;
   }
@@ -59,5 +63,21 @@ public class CreateOrderRequest {
 
   public void setNotes(String notes) {
     this.notes = notes;
+  }
+
+  public String getCouponCode() {
+    return couponCode;
+  }
+
+  public void setCouponCode(String couponCode) {
+    this.couponCode = couponCode;
+  }
+
+  public String getPaymentMethod() {
+    return paymentMethod;
+  }
+
+  public void setPaymentMethod(String paymentMethod) {
+    this.paymentMethod = paymentMethod;
   }
 }

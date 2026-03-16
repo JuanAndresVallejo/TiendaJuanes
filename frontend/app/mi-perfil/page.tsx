@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getMyProfile, updateMyPassword, updateMyProfile, UserProfile } from "../../services/profile";
-import { addAddress, getAddresses, Address } from "../../services/addresses";
+import { addAddress, getAddresses, Address, deleteAddress, setDefaultAddress, updateAddress } from "../../services/addresses";
 import { useToast } from "../../components/ToastProvider";
 
 export default function ProfilePage() {
@@ -12,6 +12,7 @@ export default function ProfilePage() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [addingAddress, setAddingAddress] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<number | null>(null);
   const { show } = useToast();
 
   const [form, setForm] = useState({
@@ -71,6 +72,13 @@ export default function ProfilePage() {
     department: "Antioquia",
     city: "Medellin",
     addressLine: ""
+  });
+
+  const [editAddress, setEditAddress] = useState({
+    department: "Antioquia",
+    city: "Medellin",
+    addressLine: "",
+    isDefault: false
   });
 
   useEffect(() => {
@@ -158,6 +166,57 @@ export default function ProfilePage() {
       show("Direccion añadida");
     } catch (error) {
       const message = error instanceof Error ? error.message : "No se pudo añadir la direccion";
+      show(message, "error");
+    }
+  };
+
+  const startEditAddress = (addr: Address) => {
+    setEditingAddressId(addr.id);
+    setEditAddress({
+      department: addr.department,
+      city: addr.city,
+      addressLine: addr.addressLine,
+      isDefault: addr.isDefault
+    });
+  };
+
+  const handleUpdateAddress = async () => {
+    if (!editingAddressId) return;
+    if (!editAddress.addressLine.trim()) {
+      show("La direccion es obligatoria", "error");
+      return;
+    }
+    try {
+      const updated = await updateAddress(editingAddressId, editAddress);
+      setAddresses((prev) => prev.map((addr) => (addr.id === updated.id ? updated : addr)));
+      setEditingAddressId(null);
+      show("Direccion actualizada");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo actualizar la direccion";
+      show(message, "error");
+    }
+  };
+
+  const handleDeleteAddress = async (id: number) => {
+    try {
+      await deleteAddress(id);
+      setAddresses((prev) => prev.filter((addr) => addr.id !== id));
+      show("Direccion eliminada");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo eliminar la direccion";
+      show(message, "error");
+    }
+  };
+
+  const handleSetDefault = async (id: number) => {
+    try {
+      await setDefaultAddress(id);
+      setAddresses((prev) =>
+        prev.map((addr) => ({ ...addr, isDefault: addr.id === id }))
+      );
+      show("Direccion principal actualizada");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo actualizar la direccion";
       show(message, "error");
     }
   };
@@ -278,8 +337,38 @@ export default function ProfilePage() {
             <div className="grid gap-2">
               {addresses.map((addr) => (
                 <div key={addr.id} className="border border-sand rounded-2xl p-3">
-                  <p className="text-sm">{addr.department} - {addr.city}</p>
-                  <p className="text-ink/70 text-sm">{addr.addressLine}</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm">{addr.department} - {addr.city}</p>
+                      <p className="text-ink/70 text-sm">{addr.addressLine}</p>
+                    </div>
+                    {addr.isDefault && (
+                      <span className="text-xs uppercase tracking-[0.2em] text-olive">Principal</span>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-3 text-xs uppercase tracking-[0.2em]">
+                    <button
+                      type="button"
+                      onClick={() => startEditAddress(addr)}
+                      className="text-terracotta"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetDefault(addr.id)}
+                      className="text-ink/70"
+                    >
+                      Marcar principal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAddress(addr.id)}
+                      className="text-terracotta"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               ))}
               {addresses.length === 0 && <p>No tienes direcciones registradas.</p>}
@@ -334,6 +423,68 @@ export default function ProfilePage() {
                 >
                   Guardar direccion
                 </button>
+              </div>
+            )}
+
+            {editingAddressId && (
+              <div className="mt-4 grid gap-3">
+                <h3 className="font-display text-lg">Editar direccion</h3>
+                <div>
+                  <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Departamento</label>
+                  <select
+                    className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
+                    value={editAddress.department}
+                    onChange={(e) => {
+                      const nextDepartment = e.target.value;
+                      const nextCities = departmentCities[nextDepartment] || [];
+                      setEditAddress({
+                        ...editAddress,
+                        department: nextDepartment,
+                        city: nextCities[0] || ""
+                      });
+                    }}
+                  >
+                    {departmentOptions.map((dept) => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Ciudad</label>
+                  <select
+                    className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
+                    value={editAddress.city}
+                    onChange={(e) => setEditAddress({ ...editAddress, city: e.target.value })}
+                  >
+                    {(departmentCities[editAddress.department] || []).map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Direccion</label>
+                  <input
+                    className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
+                    value={editAddress.addressLine}
+                    onChange={(e) => setEditAddress({ ...editAddress, addressLine: e.target.value })}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleUpdateAddress}
+                    className="rounded-full border border-ink px-4 py-2 uppercase tracking-[0.2em]"
+                  >
+                    Guardar cambios
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingAddressId(null)}
+                    className="rounded-full border border-sand px-4 py-2 uppercase tracking-[0.2em] text-ink/70"
+                  >
+                    Cancelar
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -65,15 +65,27 @@ Servicios en `docker-compose.yml`:
 ### Perfil
 - `GET /api/users/me`
 
+### Direcciones
+- `GET /api/addresses`
+- `POST /api/addresses`
+- `PUT /api/addresses/{id}`
+- `DELETE /api/addresses/{id}`
+- `PUT /api/addresses/{id}/default`
+
 ### Health
 - `GET /api/health`
 
 ### Productos
 - `GET /api/products`
-- `GET /api/products?page=1&size=20`
+- `GET /api/products/paged?page=0&size=20&sort=created_at&dir=desc`
 - `GET /api/products/{id}`
-- `GET /api/products/search?q=...`
-- `GET /api/products/filter?category&brand&size&color&minPrice&maxPrice`
+- `GET /api/products/search?q=...&page=0&size=20`
+- `GET /api/products/filter?category&brand&size&minPrice&maxPrice&page=0&size=20`
+- `GET /api/products/featured?limit=6`
+- `GET /api/products/new?limit=6`
+- `GET /api/products/best-sellers?limit=6`
+- `GET /api/products/{id}/related?limit=6`
+- `GET /api/products/by-ids?ids=1,2,3`
 
 ### Carrito
 - `POST /api/cart/add`
@@ -84,6 +96,8 @@ Servicios en `docker-compose.yml`:
 ### Órdenes
 - `POST /api/orders/create`
 - `GET /api/orders/my-orders`
+- `GET /api/orders/{id}`
+- `POST /api/orders/{id}/reorder`
 
 ### Tracking
 - `GET /api/orders/{id}/tracking`
@@ -100,15 +114,21 @@ Servicios en `docker-compose.yml`:
 - `POST /api/admin/products`
 - `PUT /api/admin/products/{id}`
 - `DELETE /api/admin/products/{id}`
-- `GET /api/admin/orders`
+- `GET /api/admin/orders?page=0&size=20`
+- `GET /api/admin/orders/{id}`
 - `PUT /api/admin/orders/update-status`
 - `GET /api/admin/dashboard/stats`
 - `GET /api/admin/analytics`
 - `PUT /api/admin/inventory/update`
+- `GET /api/admin/inventory`
 - `GET /api/admin/coupons`
 - `POST /api/admin/coupons`
 - `PUT /api/admin/coupons/{id}`
-- `PATCH /api/admin/coupons/{id}/deactivate`
+- `DELETE /api/admin/coupons/{id}`
+- `GET /api/admin/banners`
+- `POST /api/admin/banners`
+- `PUT /api/admin/banners/{id}`
+- `DELETE /api/admin/banners/{id}`
 - `POST /api/admin/images/upload`
 
 ---
@@ -140,6 +160,12 @@ Migraciones principales:
 - `V13__order_tracking.sql`  
 - `V14__analytics_tables.sql`  
 - `V15__seed_products_after_fix.sql`
+- `V16__add_order_notes.sql`
+- `V17__add_product_variant_version.sql`
+- `V18__add_indexes.sql`
+- `V19__add_product_marketing_fields.sql`
+- `V20__create_banners.sql`
+- `V21__seed_shopify_features.sql`
 
 ---
 
@@ -210,9 +236,21 @@ Admin:
 - `/admin/products/new`
 - `/admin/products/edit/[id]`
 - `/admin/orders`
+- `/admin/orders/[id]`
 - `/admin/inventory`
 - `/admin/coupons`
 - `/admin/users`
+- `/admin/banners`
+
+---
+
+## 14) Performance y estabilidad (resumen)
+
+- Dashboard usa queries agregadas en SQL (evita streams sobre entidades).
+- Queries críticas usan `JOIN FETCH` o `@EntityGraph` para evitar N+1.
+- Inventario protegido con optimistic locking en `ProductVariant`.
+- Índices en `orders.status`, `orders.created_at` y `products.ref_code`.
+- Dashboard y “Lo más vendido” calculados con SQL agregado.
 
 ---
 

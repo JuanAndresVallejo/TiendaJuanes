@@ -1,5 +1,7 @@
 import ProductGallery from "../../../components/ProductGallery";
 import ProductDetailClient from "../../../components/ProductDetailClient";
+import RelatedProducts from "../../../components/RelatedProducts";
+import RecentlyViewed from "../../../components/RecentlyViewed";
 import { getProduct } from "../../../services/products";
 import type { Metadata } from "next";
 
@@ -9,7 +11,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     return { title: "Producto no encontrado | Tienda Juanes" };
   }
   const title = `${product.name} | Tienda Juanes`;
-  const description = `Compra ${product.name} original importado en Tienda Juanes.`;
+  const brand = product.brand ? ` de ${product.brand}` : "";
+  const category = product.category ? ` en ${product.category}` : "";
+  const description = `Compra ${product.name}${brand}${category} en Tienda Juanes.`;
   const image = product.images[0]?.imageUrl;
   return {
     title,
@@ -33,6 +37,9 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
   }
 
   const images = product.images.map((img) => img.imageUrl);
+  const hasDiscount = (product.discountPercentage || 0) > 0;
+  const discountFactor = 1 - (product.discountPercentage || 0) / 100;
+  const finalPrice = hasDiscount ? Math.round(product.basePrice * discountFactor) : product.basePrice;
 
   return (
     <section className="max-w-6xl mx-auto px-6 py-12">
@@ -44,12 +51,19 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
           <p className="mt-4 text-ink/70">{product.description}</p>
           <div className="mt-6">
             <span className="text-2xl text-terracotta font-semibold">
-              ${product.basePrice.toLocaleString("es-CO")}
+              ${finalPrice.toLocaleString("es-CO")}
             </span>
+            {hasDiscount && (
+              <span className="ml-3 text-sm text-ink/50 line-through">
+                ${product.basePrice.toLocaleString("es-CO")}
+              </span>
+            )}
           </div>
           <ProductDetailClient product={product} />
         </div>
       </div>
+      <RelatedProducts productId={params.id} />
+      <RecentlyViewed currentId={params.id} />
     </section>
   );
 }

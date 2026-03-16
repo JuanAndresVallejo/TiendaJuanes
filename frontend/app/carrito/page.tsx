@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import CartItem from "../../components/CartItem";
 import { getCart, removeFromCart, updateCart, CartItem as CartItemType } from "../../services/cart";
+import { getRole } from "../../services/auth";
 
 export default function CartPage() {
   const [items, setItems] = useState<CartItemType[]>([]);
@@ -21,17 +22,34 @@ export default function CartPage() {
   };
 
   useEffect(() => {
+    if (getRole() === "ADMIN") {
+      window.location.href = "/admin/dashboard";
+      return;
+    }
     load();
   }, []);
 
   const handleUpdate = async (productVariantId: number, quantity: number) => {
-    await updateCart(productVariantId, quantity);
-    await load();
+    setItems((prev) =>
+      prev.map((item) =>
+        item.productVariantId === productVariantId ? { ...item, quantity } : item
+      )
+    );
+    try {
+      await updateCart(productVariantId, quantity);
+    } catch {
+      await load();
+    }
   };
 
   const handleRemove = async (productVariantId: number) => {
-    await removeFromCart(productVariantId);
-    await load();
+    const previous = items;
+    setItems((prev) => prev.filter((item) => item.productVariantId !== productVariantId));
+    try {
+      await removeFromCart(productVariantId);
+    } catch {
+      setItems(previous);
+    }
   };
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);

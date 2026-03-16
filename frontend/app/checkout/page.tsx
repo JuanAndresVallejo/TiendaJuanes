@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getToken } from "../../services/auth";
+import { getRole, getToken } from "../../services/auth";
 import { createOrder } from "../../services/orders";
 import { createPreference } from "../../services/payments";
 import { addAddress, getAddresses, Address } from "../../services/addresses";
@@ -29,6 +29,8 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [notes, setNotes] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("MERCADOPAGO");
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
   const cityOptions = useMemo(() => departments[department] || [], [department]);
   const [isBeforeTwoPm, setIsBeforeTwoPm] = useState(() => {
@@ -38,6 +40,11 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!token) return;
+    if (getRole() === "ADMIN") {
+      show("Los administradores no pueden realizar pedidos", "error");
+      window.location.href = "/admin/dashboard";
+      return;
+    }
     getAddresses()
       .then((data) => {
         setAddresses(data);
@@ -88,6 +95,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (couponCode.trim() && !appliedCoupon) {
+      show("Debes validar el cupón antes de continuar", "error");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -110,13 +122,21 @@ export default function CheckoutPage() {
         city,
         addressLine,
         express: express && canUseExpress,
-        notes: notes.trim() || undefined
+        notes: notes.trim() || undefined,
+        couponCode: appliedCoupon || undefined,
+        paymentMethod
       });
 
-      const preference = await createPreference(order.id);
-      window.open(preference.initPoint, "_blank");
+      if (paymentMethod === "MERCADOPAGO") {
+        const preference = await createPreference(order.id);
+        window.open(preference.initPoint, "_blank");
+      } else {
+        show("Pedido creado. Te contactaremos para coordinar el pago.", "success");
+        window.location.href = "/mis-pedidos";
+      }
     } catch (error) {
-      show("No se pudo procesar el checkout", "error");
+      const message = error instanceof Error ? error.message : "No se pudo procesar el checkout";
+      show(message, "error");
     } finally {
       setLoading(false);
     }
@@ -130,6 +150,7 @@ export default function CheckoutPage() {
         return;
       }
       setDiscount(Number(res.discount));
+      setAppliedCoupon(couponCode.trim());
       show("Cupón aplicado");
     } catch {
       show("El cupón no es válido", "error");
@@ -252,6 +273,27 @@ export default function CheckoutPage() {
               Aplicar
             </button>
           </div>
+          {appliedCoupon && (
+            <p className="text-xs text-olive">Cupón aplicado: {appliedCoupon}</p>
+          )}
+        </div>
+
+        <div className="grid gap-2">
+          <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Método de pago</label>
+          <select
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+            className="w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
+          >
+            <option value="MERCADOPAGO">PSE (MercadoPago)</option>
+            <option value="TRANSFERENCIA">Transferencia</option>
+            <option value="CONTRAENTREGA">Contraentrega</option>
+          </select>
+          {paymentMethod !== "MERCADOPAGO" && (
+            <p className="text-xs text-ink/60">
+              Te contactaremos para confirmar el pago y coordinar la entrega.
+            </p>
+          )}
         </div>
 
         <div className="grid gap-2">

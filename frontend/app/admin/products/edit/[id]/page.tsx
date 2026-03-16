@@ -17,6 +17,9 @@ export default function AdminProductEditPage({ params }: { params: { id: string 
         description: product.description,
         brand: product.brand || "",
         category: product.category || "",
+        featured: product.featured || false,
+        tags: product.tags || "",
+        discountPercentage: product.discountPercentage || 0,
         basePrice: product.basePrice,
         images: product.images.map((i) => ({ imageUrl: i.imageUrl })),
         variants: product.variants.map((v) => ({

@@ -28,6 +28,9 @@ public class CartService {
   public void addToCart(User user, AddToCartRequest request) {
     ProductVariant variant = productVariantRepository.findById(request.getProductVariantId())
         .orElseThrow(() -> new IllegalArgumentException("Variant not found"));
+    if (variant.getStock() <= 0) {
+      throw new IllegalArgumentException("Producto sin stock");
+    }
 
     CartItem item = cartItemRepository.findByUserIdAndProductVariantId(user.getId(), variant.getId())
         .orElseGet(() -> {
@@ -39,6 +42,9 @@ public class CartService {
         });
 
     int newQty = item.getQuantity() + request.getQuantity();
+    if (newQty > variant.getStock()) {
+      throw new IllegalArgumentException("Stock insuficiente");
+    }
     item.setQuantity(newQty);
     cartItemRepository.save(item);
   }
@@ -61,6 +67,10 @@ public class CartService {
   public void updateQuantity(User user, UpdateCartRequest request) {
     CartItem item = cartItemRepository.findByUserIdAndProductVariantId(user.getId(), request.getProductVariantId())
         .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+    ProductVariant variant = item.getProductVariant();
+    if (request.getQuantity() > variant.getStock()) {
+      throw new IllegalArgumentException("Stock insuficiente");
+    }
     item.setQuantity(request.getQuantity());
     cartItemRepository.save(item);
   }

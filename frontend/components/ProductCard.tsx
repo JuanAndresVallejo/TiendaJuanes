@@ -9,15 +9,27 @@ import { useToast } from "./ToastProvider";
 
 export default function ProductCard({ product }: { product: Product }) {
   const image = product.images[0]?.imageUrl;
+  const tags = (product.tags || "").split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+  const hasDiscount = (product.discountPercentage || 0) > 0;
+  const discountFactor = 1 - (product.discountPercentage || 0) / 100;
+  const finalPrice = hasDiscount ? Math.round(product.basePrice * discountFactor) : product.basePrice;
   const [loading, setLoading] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const colors = Array.from(new Set(product.variants.map((v) => v.color)));
+  const sizes = Array.from(new Set(product.variants.map((v) => v.size)));
+  const [selectedColor, setSelectedColor] = useState(colors[0] || "");
+  const [selectedSize, setSelectedSize] = useState(sizes[0] || "");
   const { show } = useToast();
 
-  const handleAdd = async () => {
-    const variant = product.variants[0];
-    if (!variant) return;
+  const selectedVariant = product.variants.find(
+    (v) => v.color === selectedColor && v.size === selectedSize
+  );
+  const outOfStock = product.variants.every((v) => v.stock <= 0);
+
+  const handleAdd = async (variantId: number) => {
     try {
       setLoading(true);
-      await addToCart(variant.id, 1);
+      await addToCart(variantId, 1);
       show("Producto añadido al carrito");
     } catch (error) {
       show("Debes iniciar sesión para agregar al carrito", "error");
@@ -34,26 +46,101 @@ export default function ProductCard({ product }: { product: Product }) {
         ) : (
           <div className="w-full h-full flex items-center justify-center text-sm">Sin imagen</div>
         )}
+        <div className="absolute top-3 left-3 flex flex-col gap-2">
+          {hasDiscount && (
+            <span className="bg-terracotta text-cream text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full">
+              Oferta
+            </span>
+          )}
+          {tags.includes("nuevo") && (
+            <span className="bg-ink text-cream text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full">
+              Nuevo
+            </span>
+          )}
+          {tags.includes("limitado") && (
+            <span className="bg-olive text-cream text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-full">
+              Limitado
+            </span>
+          )}
+        </div>
       </div>
       <div className="p-5">
         <h3 className="font-display text-lg">{product.name}</h3>
         <p className="text-sm text-ink/70 mt-2 max-h-10 overflow-hidden">{product.description}</p>
         <div className="flex items-center justify-between mt-4">
-          <span className="text-terracotta font-semibold">
-            ${product.basePrice.toLocaleString("es-CO")}
-          </span>
+          <div className="flex flex-col">
+            <span className="text-terracotta font-semibold">
+              ${finalPrice.toLocaleString("es-CO")}
+            </span>
+            {hasDiscount && (
+              <span className="text-xs text-ink/50 line-through">
+                ${product.basePrice.toLocaleString("es-CO")}
+              </span>
+            )}
+          </div>
           <Link href={`/producto/${product.id}`} className="text-sm uppercase tracking-[0.2em]">
             Ver detalle
           </Link>
         </div>
         <button
-          onClick={handleAdd}
-          disabled={loading}
+          onClick={() => setShowPicker(true)}
+          disabled={loading || outOfStock}
           className="mt-4 w-full rounded-full bg-ink text-cream py-2 uppercase tracking-[0.2em] text-xs"
         >
-          {loading ? "Agregando..." : "Añadir al carrito"}
+          {outOfStock ? "Sin stock" : loading ? "Agregando..." : "Añadir al carrito"}
         </button>
       </div>
+      {showPicker && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-cream rounded-2xl p-6 w-full max-w-sm space-y-4">
+            <h4 className="font-display text-lg">Selecciona especificaciones</h4>
+            <div>
+              <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Color</label>
+              <select
+                value={selectedColor}
+                onChange={(e) => setSelectedColor(e.target.value)}
+                className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-3 py-2"
+              >
+                {colors.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Talla</label>
+              <select
+                value={selectedSize}
+                onChange={(e) => setSelectedSize(e.target.value)}
+                className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-3 py-2"
+              >
+                {sizes.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            {selectedVariant && selectedVariant.stock <= 0 && (
+              <p className="text-sm text-terracotta">Sin stock para esta combinación.</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPicker(false)}
+                className="flex-1 rounded-full border border-ink py-2 uppercase tracking-[0.2em] text-xs"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => selectedVariant && handleAdd(selectedVariant.id)}
+                disabled={!selectedVariant || selectedVariant.stock <= 0 || loading}
+                className="flex-1 rounded-full bg-terracotta text-cream py-2 uppercase tracking-[0.2em] text-xs disabled:opacity-50"
+              >
+                Añadir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

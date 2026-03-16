@@ -21,6 +21,12 @@ function authHeaders() {
   return headers;
 }
 
+function notifyCartUpdated() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("cart-updated"));
+  }
+}
+
 export async function getCart(): Promise<CartItem[]> {
   const res = await fetch(apiUrl("/cart"), { headers: { ...authHeaders() } });
   if (!res.ok) throw new Error("No se pudo cargar el carrito");
@@ -34,6 +40,7 @@ export async function addToCart(productVariantId: number, quantity: number) {
     body: JSON.stringify({ productVariantId, quantity })
   });
   if (!res.ok) throw new Error("No se pudo agregar al carrito");
+  notifyCartUpdated();
 }
 
 export async function updateCart(productVariantId: number, quantity: number) {
@@ -43,6 +50,7 @@ export async function updateCart(productVariantId: number, quantity: number) {
     body: JSON.stringify({ productVariantId, quantity })
   });
   if (!res.ok) throw new Error("No se pudo actualizar el carrito");
+  notifyCartUpdated();
 }
 
 export async function removeFromCart(productVariantId: number) {
@@ -51,4 +59,5 @@ export async function removeFromCart(productVariantId: number) {
     headers: { ...authHeaders() }
   });
   if (!res.ok) throw new Error("No se pudo eliminar del carrito");
+  notifyCartUpdated();
 }

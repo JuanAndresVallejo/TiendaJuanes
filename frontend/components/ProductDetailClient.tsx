@@ -16,9 +16,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const { show } = useToast();
 
   const selectedVariant = product.variants.find((v) => v.color === color && v.size === size);
+  const isOutOfStock = !selectedVariant || selectedVariant.stock <= 0;
 
   const handleAdd = async () => {
-    if (!selectedVariant) return;
+    if (!selectedVariant || selectedVariant.stock <= 0) return;
     try {
       setLoading(true);
       await addToCart(selectedVariant.id, quantity);
@@ -78,10 +79,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       </div>
       <button
         onClick={handleAdd}
-        disabled={loading || !selectedVariant}
+        disabled={loading || isOutOfStock}
         className="mt-2 w-full rounded-full bg-terracotta text-cream py-3 uppercase tracking-[0.2em]"
       >
-        {loading ? "Agregando..." : "Añadir al carrito"}
+        {isOutOfStock ? "Sin stock" : loading ? "Agregando..." : "Añadir al carrito"}
       </button>
     </div>
   );

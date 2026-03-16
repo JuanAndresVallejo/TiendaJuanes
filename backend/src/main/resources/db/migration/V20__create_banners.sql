@@ -1,0 +1,8 @@
+CREATE TABLE banners (
+  id BIGSERIAL PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  subtitle VARCHAR(300) NOT NULL,
+  link TEXT,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL
+);

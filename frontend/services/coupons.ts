@@ -30,7 +30,15 @@ export async function createCoupon(payload: any) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error("No se pudo crear el cupón");
+  if (!res.ok) {
+    try {
+      const data = await res.json();
+      if (data?.message) throw new Error(data.message);
+    } catch {
+      // ignore
+    }
+    throw new Error("No se pudo crear el cupón");
+  }
   return res.json();
 }
 
@@ -40,7 +48,15 @@ export async function updateCoupon(id: number, payload: any) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error("No se pudo actualizar el cupón");
+  if (!res.ok) {
+    try {
+      const data = await res.json();
+      if (data?.message) throw new Error(data.message);
+    } catch {
+      // ignore
+    }
+    throw new Error("No se pudo actualizar el cupón");
+  }
   return res.json();
 }
 

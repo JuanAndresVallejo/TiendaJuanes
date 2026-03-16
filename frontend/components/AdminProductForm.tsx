@@ -20,6 +20,9 @@ type ProductFormData = {
   description: string;
   brand: string;
   category: string;
+  featured: boolean;
+  tags: string;
+  discountPercentage: number;
   basePrice: number;
   images: Image[];
   variants: Variant[];
@@ -41,6 +44,9 @@ export default function AdminProductForm({
       description: "",
       brand: "",
       category: "",
+      featured: false,
+      tags: "",
+      discountPercentage: 0,
       basePrice: 0,
       images: [{ imageUrl: "" }],
       variants: [{ color: "", size: "", sku: "", price: 0, stock: 0 }]
@@ -113,6 +119,23 @@ export default function AdminProductForm({
             className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
           />
         </div>
+        <div>
+          <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Descuento (%)</label>
+          <input
+            type="number"
+            value={form.discountPercentage}
+            onChange={(e) => updateField("discountPercentage", Number(e.target.value))}
+            className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
+          />
+        </div>
+        <div className="flex items-center gap-2 mt-6">
+          <input
+            type="checkbox"
+            checked={form.featured}
+            onChange={(e) => updateField("featured", e.target.checked)}
+          />
+          <span className="text-sm uppercase tracking-[0.2em] text-ink/70">Destacado</span>
+        </div>
       </div>
 
       <div>
@@ -122,6 +145,15 @@ export default function AdminProductForm({
           onChange={(e) => updateField("description", e.target.value)}
           className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
           rows={4}
+        />
+      </div>
+      <div>
+        <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Tags (separados por coma)</label>
+        <input
+          value={form.tags}
+          onChange={(e) => updateField("tags", e.target.value)}
+          className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
+          placeholder="nuevo, oferta, limitado"
         />
       </div>
 

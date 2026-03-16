@@ -64,6 +64,12 @@ export async function getOrders() {
   return res.json();
 }
 
+export async function getOrderDetail(orderId: number) {
+  const res = await fetch(apiUrl(`/admin/orders/${orderId}`), { headers: authHeaders() });
+  if (!res.ok) throw new Error("No se pudo cargar el pedido");
+  return res.json();
+}
+
 export async function updateOrderStatus(orderId: number, status: string) {
   const res = await fetch(apiUrl("/admin/orders/update-status"), {
     method: "PUT",
@@ -83,4 +89,48 @@ export async function getAdminUsers() {
   const res = await fetch(apiUrl("/admin/users"), { headers: authHeaders() });
   if (!res.ok) throw new Error("No se pudieron cargar usuarios");
   return res.json();
+}
+
+export async function getBanners() {
+  const res = await fetch(apiUrl("/admin/banners"), { headers: authHeaders() });
+  if (!res.ok) throw new Error("No se pudieron cargar banners");
+  return res.json();
+}
+
+export async function createBanner(payload: {
+  title: string;
+  subtitle: string;
+  link?: string;
+  active?: boolean;
+}) {
+  const res = await fetch(apiUrl("/admin/banners"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error("No se pudo crear el banner");
+  return res.json();
+}
+
+export async function updateBanner(id: number, payload: {
+  title: string;
+  subtitle: string;
+  link?: string;
+  active?: boolean;
+}) {
+  const res = await fetch(apiUrl(`/admin/banners/${id}`), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error("No se pudo actualizar el banner");
+  return res.json();
+}
+
+export async function deleteBanner(id: number) {
+  const res = await fetch(apiUrl(`/admin/banners/${id}`), {
+    method: "DELETE",
+    headers: authHeaders()
+  });
+  if (!res.ok) throw new Error("No se pudo eliminar el banner");
 }

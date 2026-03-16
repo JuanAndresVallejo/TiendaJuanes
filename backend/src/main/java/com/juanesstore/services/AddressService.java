@@ -56,6 +56,45 @@ public class AddressService {
     addressRepository.save(address);
   }
 
+  @Transactional
+  public AddressResponse updateAddress(User user, Long addressId, AddressRequest request) {
+    Address address = addressRepository.findById(addressId)
+        .orElseThrow(() -> new IllegalArgumentException("Address not found"));
+    if (!address.getUser().getId().equals(user.getId())) {
+      throw new IllegalArgumentException("Address not found");
+    }
+    address.setDepartment(request.getDepartment());
+    address.setCity(request.getCity());
+    address.setAddressLine(request.getAddressLine());
+
+    if (request.getIsDefault() != null && request.getIsDefault()) {
+      clearDefault(user);
+      address.setIsDefault(true);
+    }
+
+    return toResponse(addressRepository.save(address));
+  }
+
+  @Transactional
+  public void deleteAddress(User user, Long addressId) {
+    Address address = addressRepository.findById(addressId)
+        .orElseThrow(() -> new IllegalArgumentException("Address not found"));
+    if (!address.getUser().getId().equals(user.getId())) {
+      throw new IllegalArgumentException("Address not found");
+    }
+    boolean wasDefault = Boolean.TRUE.equals(address.getIsDefault());
+    addressRepository.delete(address);
+
+    if (wasDefault) {
+      addressRepository.findByUserOrderByCreatedAtDesc(user).stream()
+          .findFirst()
+          .ifPresent(next -> {
+            next.setIsDefault(true);
+            addressRepository.save(next);
+          });
+    }
+  }
+
   private void clearDefault(User user) {
     addressRepository.findByUserOrderByCreatedAtDesc(user)
         .forEach(addr -> {

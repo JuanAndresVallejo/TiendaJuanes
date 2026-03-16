@@ -20,6 +20,12 @@ public class ProductCreateRequest {
 
   private String category;
 
+  private Boolean featured;
+
+  private String tags;
+
+  private Integer discountPercentage;
+
   @NotNull
   private BigDecimal basePrice;
 
@@ -67,6 +73,30 @@ public class ProductCreateRequest {
 
   public void setCategory(String category) {
     this.category = category;
+  }
+
+  public Boolean getFeatured() {
+    return featured;
+  }
+
+  public void setFeatured(Boolean featured) {
+    this.featured = featured;
+  }
+
+  public String getTags() {
+    return tags;
+  }
+
+  public void setTags(String tags) {
+    this.tags = tags;
+  }
+
+  public Integer getDiscountPercentage() {
+    return discountPercentage;
+  }
+
+  public void setDiscountPercentage(Integer discountPercentage) {
+    this.discountPercentage = discountPercentage;
   }
 
   public BigDecimal getBasePrice() {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getFullName, getRole, getToken, logout } from "../services/auth";
+import { getCart } from "../services/cart";
 
 export default function Navbar() {
   const router = useRouter();
@@ -11,11 +12,28 @@ export default function Navbar() {
   const [fullName, setFullName] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     setFullName(getFullName());
     setRole(getRole());
     setIsAuthenticated(!!getToken());
+    const loadCartCount = () => {
+      if (getToken() && getRole() !== "ADMIN") {
+        getCart()
+          .then((items) => {
+            const total = items.reduce((sum, item) => sum + item.quantity, 0);
+            setCartCount(total);
+          })
+          .catch(() => setCartCount(0));
+      } else {
+        setCartCount(0);
+      }
+    };
+    loadCartCount();
+    const handler = () => loadCartCount();
+    window.addEventListener("cart-updated", handler);
+    return () => window.removeEventListener("cart-updated", handler);
   }, []);
 
   const profileHref = role === "ADMIN" ? "/admin/dashboard" : "/mi-perfil";
@@ -42,21 +60,34 @@ export default function Navbar() {
         <Link href="/" className="text-2xl font-display tracking-wide">
           Tienda Juanes
         </Link>
-        <form onSubmit={handleSubmit} className="flex-1 min-w-[220px] max-w-md">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar productos o referencia"
-            className="w-full rounded-full border border-sand bg-white/80 px-4 py-2 text-sm"
-          />
-        </form>
+        {isAuthenticated && (
+          <form onSubmit={handleSubmit} className="flex-1 min-w-[220px] max-w-md">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar productos o referencia"
+              className="w-full rounded-full border border-sand bg-white/80 px-4 py-2 text-sm"
+            />
+          </form>
+        )}
         <nav className="flex items-center gap-6 text-sm uppercase tracking-[0.2em]">
-          <Link href="/productos" className="hover:text-terracotta">Productos</Link>
-          {role !== "ADMIN" && (
-            <Link href="/carrito" className="hover:text-terracotta">Mi carrito</Link>
+          {!isAuthenticated && (
+            <>
+              <Link href="/productos" className="hover:text-terracotta">Productos</Link>
+              <Link href="/login" className="hover:text-terracotta">Iniciar sesión</Link>
+            </>
           )}
           {isAuthenticated && role !== "ADMIN" ? (
             <>
+              <Link href="/productos" className="hover:text-terracotta">Productos</Link>
+              <Link href="/carrito" className="hover:text-terracotta relative">
+                Mi carrito
+                {cartCount > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center text-[10px] w-5 h-5 rounded-full bg-terracotta text-cream">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
               <Link href="/mis-pedidos" className="hover:text-terracotta">Mis pedidos</Link>
               <Link href={profileHref} className="hover:text-terracotta">
                 {profileLabel}
@@ -80,8 +111,6 @@ export default function Navbar() {
                 Cerrar sesión
               </button>
             </>
-          ) : (
-            <Link href="/login" className="hover:text-terracotta">Iniciar sesión</Link>
           )}
         </nav>
       </div>

@@ -10,17 +10,20 @@ public class AdminOrderResponse {
   private BigDecimal totalAmount;
   private String status;
   private String paymentMethod;
+  private Instant paymentDate;
   private String shippingAddress;
   private String notes;
 
   public AdminOrderResponse(Long id, String customerName, Instant createdAt, BigDecimal totalAmount,
-                            String status, String paymentMethod, String shippingAddress, String notes) {
+                            String status, String paymentMethod, Instant paymentDate,
+                            String shippingAddress, String notes) {
     this.id = id;
     this.customerName = customerName;
     this.createdAt = createdAt;
     this.totalAmount = totalAmount;
     this.status = status;
     this.paymentMethod = paymentMethod;
+    this.paymentDate = paymentDate;
     this.shippingAddress = shippingAddress;
     this.notes = notes;
   }
@@ -47,6 +50,10 @@ public class AdminOrderResponse {
 
   public String getPaymentMethod() {
     return paymentMethod;
+  }
+
+  public Instant getPaymentDate() {
+    return paymentDate;
   }
 
   public String getShippingAddress() {

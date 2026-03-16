@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getOrder, getOrderTracking } from "../../../services/orders";
+import { getOrder, getOrderTracking, reorderOrder } from "../../../services/orders";
+import { useToast } from "../../../components/ToastProvider";
 
 const steps = ["PAID", "PACKING", "SHIPPED", "DELIVERED"];
 
@@ -15,6 +16,8 @@ const labels: Record<string, string> = {
 export default function OrderTrackingPage({ params }: { params: { id: string } }) {
   const [history, setHistory] = useState<any[]>([]);
   const [order, setOrder] = useState<any | null>(null);
+  const [reordering, setReordering] = useState(false);
+  const { show } = useToast();
 
   useEffect(() => {
     getOrderTracking(Number(params.id)).then(setHistory).catch(() => setHistory([]));
@@ -22,6 +25,20 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
   }, [params.id]);
 
   const currentStatus = history.length ? history[history.length - 1].status : "PENDING";
+
+  const handleReorder = async () => {
+    try {
+      setReordering(true);
+      await reorderOrder(Number(params.id));
+      show("Productos añadidos al carrito");
+      window.location.href = "/carrito";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo reordenar";
+      show(message, "error");
+    } finally {
+      setReordering(false);
+    }
+  };
 
   return (
     <section className="max-w-4xl mx-auto px-6 py-12">
@@ -36,11 +53,31 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
           <div className="mt-4 space-y-2">
             {order.items.map((item: any) => (
               <div key={item.productVariantId} className="flex items-center justify-between">
-                <span>{item.name} · {item.color} · {item.size}</span>
-                <span>x{item.quantity}</span>
+                <div>
+                  <span className="font-medium">{item.productName}</span>
+                  <span className="text-ink/60 text-xs ml-2">REF: {item.productReference}</span>
+                  <div className="text-xs text-ink/60">
+                    {item.color} · {item.size}
+                  </div>
+                </div>
+                <div className="text-right text-xs">
+                  <div>Unitario: ${Number(item.price).toLocaleString("es-CO")}</div>
+                  <div>Cantidad: {item.quantity}</div>
+                  <div className="font-semibold">
+                    Subtotal: ${(Number(item.price) * item.quantity).toLocaleString("es-CO")}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={handleReorder}
+            disabled={reordering}
+            className="mt-4 rounded-full border border-ink px-4 py-2 uppercase tracking-[0.2em] text-xs"
+          >
+            {reordering ? "Reordenando..." : "Comprar nuevamente"}
+          </button>
         </div>
       )}
       <div className="mt-8 space-y-4">

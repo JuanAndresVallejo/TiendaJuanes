@@ -8,6 +8,8 @@ export async function createOrder(payload: {
   addressLine: string;
   express: boolean;
   notes?: string;
+  couponCode?: string;
+  paymentMethod?: string;
 }) {
   const token = getToken();
   const headers: Record<string, string> = {
@@ -21,7 +23,15 @@ export async function createOrder(payload: {
     headers,
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error("No se pudo crear la orden");
+  if (!res.ok) {
+    try {
+      const data = await res.json();
+      if (data?.message) throw new Error(data.message);
+    } catch {
+      // ignore
+    }
+    throw new Error("No se pudo crear la orden");
+  }
   return res.json();
 }
 
@@ -50,4 +60,21 @@ export async function getOrder(orderId: number) {
   });
   if (!res.ok) throw new Error("No se pudo cargar el pedido");
   return res.json();
+}
+
+export async function reorderOrder(orderId: number) {
+  const token = getToken();
+  const res = await fetch(apiUrl(`/orders/${orderId}/reorder`), {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+  if (!res.ok) {
+    try {
+      const data = await res.json();
+      if (data?.message) throw new Error(data.message);
+    } catch {
+      // ignore
+    }
+    throw new Error("No se pudo reordenar");
+  }
 }

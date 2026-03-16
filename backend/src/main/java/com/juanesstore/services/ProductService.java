@@ -11,11 +11,15 @@ import com.juanesstore.models.ProductImage;
 import com.juanesstore.models.ProductVariant;
 import com.juanesstore.repositories.ProductRepository;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +34,9 @@ public class ProductService {
   @Transactional(readOnly = true)
   @Cacheable("products")
   public List<ProductResponse> getAll() {
-    return productRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
+    return productRepository.findAll().stream()
+        .map(this::toResponse)
+        .collect(Collectors.toList());
   }
 
   @Transactional(readOnly = true)
@@ -42,25 +48,78 @@ public class ProductService {
   }
 
   @Transactional(readOnly = true)
-  @Cacheable(value = "productSearch", key = "#query")
-  public List<ProductResponse> search(String query) {
-    return productRepository.search(query).stream()
+  public Page<ProductResponse> searchPaged(String query, Pageable pageable) {
+    return productRepository.search(query, pageable).map(this::toResponse);
+  }
+
+  @Transactional(readOnly = true)
+  public Page<ProductResponse> filterPaged(String category, String brand, String size, String color,
+                                           BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
+    return productRepository.filter(category, brand, size, color, minPrice, maxPrice, pageable)
+        .map(this::toResponse);
+  }
+
+  @Transactional(readOnly = true)
+  public Page<ProductResponse> getPaged(int page, int size, String sort, String direction) {
+    Sort.Direction dir = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
+    Pageable pageable;
+    if ("best_sellers".equalsIgnoreCase(sort)) {
+      pageable = PageRequest.of(page, size);
+      return productRepository.findBestSellers(pageable).map(this::toResponse);
+    }
+    String sortBy = "createdAt";
+    if ("price".equalsIgnoreCase(sort)) sortBy = "basePrice";
+    if ("name".equalsIgnoreCase(sort)) sortBy = "name";
+    if ("created_at".equalsIgnoreCase(sort)) sortBy = "createdAt";
+    pageable = PageRequest.of(page, size, Sort.by(dir, sortBy));
+    return productRepository.findAll(pageable).map(this::toResponse);
+  }
+
+  @Transactional(readOnly = true)
+  public List<ProductResponse> getFeatured(int limit) {
+    return productRepository.findByFeaturedTrue(PageRequest.of(0, limit)).stream()
         .map(this::toResponse)
         .collect(Collectors.toList());
   }
 
   @Transactional(readOnly = true)
-  @Cacheable(value = "productFilter", key = "#category + '-' + #brand + '-' + #size + '-' + #color + '-' + #minPrice + '-' + #maxPrice")
-  public List<ProductResponse> filter(String category, String brand, String size, String color,
-                                      BigDecimal minPrice, BigDecimal maxPrice) {
-    return productRepository.filter(category, brand, size, color, minPrice, maxPrice).stream()
+  public List<ProductResponse> getNewest(int limit) {
+    return productRepository.findNewest(PageRequest.of(0, limit)).stream()
         .map(this::toResponse)
         .collect(Collectors.toList());
   }
 
   @Transactional(readOnly = true)
-  public List<ProductResponse> getPaged(int page, int size) {
-    return productRepository.findAll(PageRequest.of(page, size)).stream()
+  public List<ProductResponse> getBestSellers(int limit) {
+    return productRepository.findBestSellers(PageRequest.of(0, limit)).stream()
+        .map(this::toResponse)
+        .collect(Collectors.toList());
+  }
+
+  @Transactional(readOnly = true)
+  public List<ProductResponse> getRelated(Long productId, int limit) {
+    Product product = productRepository.findById(productId)
+        .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+    String category = product.getCategory();
+    if (category == null || category.isBlank()) {
+      return List.of();
+    }
+    return productRepository.findRelated(category, productId, PageRequest.of(0, limit)).stream()
+        .map(this::toResponse)
+        .collect(Collectors.toList());
+  }
+
+  @Transactional(readOnly = true)
+  public List<ProductResponse> getByIds(String ids) {
+    if (ids == null || ids.isBlank()) {
+      return List.of();
+    }
+    List<Long> idList = Arrays.stream(ids.split(","))
+        .map(String::trim)
+        .filter(s -> !s.isEmpty())
+        .map(Long::valueOf)
+        .collect(Collectors.toList());
+    return productRepository.findByIdIn(idList).stream()
         .map(this::toResponse)
         .collect(Collectors.toList());
   }
@@ -97,6 +156,9 @@ public class ProductService {
     product.setBrand(request.getBrand());
     product.setCategory(request.getCategory());
     product.setBasePrice(request.getBasePrice());
+    product.setFeatured(request.getFeatured() != null && request.getFeatured());
+    product.setTags(request.getTags());
+    product.setDiscountPercentage(request.getDiscountPercentage() != null ? request.getDiscountPercentage() : 0);
 
     if (request.getVariants() != null) {
       for (ProductVariantRequest variantRequest : request.getVariants()) {
@@ -129,6 +191,7 @@ public class ProductService {
         .map(i -> new ProductImageResponse(i.getId(), i.getImageUrl()))
         .collect(Collectors.toList());
     return new ProductResponse(product.getId(), product.getName(), product.getRefCode(), product.getDescription(),
-        product.getBrand(), product.getCategory(), product.getBasePrice(), product.getCreatedAt(), variants, images);
+        product.getBrand(), product.getCategory(), product.getFeatured(), product.getTags(),
+        product.getDiscountPercentage(), product.getBasePrice(), product.getCreatedAt(), variants, images);
   }
 }

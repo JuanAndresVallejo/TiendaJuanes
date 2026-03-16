@@ -39,4 +39,18 @@ public class AddressController {
     addressService.setDefault(user, id);
     return ResponseEntity.ok().build();
   }
+
+  @PutMapping("/{id}")
+  public ResponseEntity<AddressResponse> updateAddress(@PathVariable Long id,
+                                                       @Valid @RequestBody AddressRequest request) {
+    User user = securityUtils.getCurrentUser();
+    return ResponseEntity.ok(addressService.updateAddress(user, id, request));
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteAddress(@PathVariable Long id) {
+    User user = securityUtils.getCurrentUser();
+    addressService.deleteAddress(user, id);
+    return ResponseEntity.ok().build();
+  }
 }

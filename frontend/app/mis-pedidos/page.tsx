@@ -19,7 +19,10 @@ export default function MyOrdersPage() {
           <div key={order.id} className="bg-white/70 border border-sand rounded-2xl p-4 flex items-center justify-between">
             <div>
               <p className="text-sm text-ink/70">Pedido #{order.id}</p>
-              <p className="text-sm">{new Date(order.createdAt).toLocaleDateString("es-CO")}</p>
+              <p className="text-sm">
+                {new Date(order.createdAt).toLocaleDateString("es-CO")} ·{" "}
+                {new Date(order.createdAt).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+              </p>
               <p className="text-sm">Estado: {order.status}</p>
             </div>
             <div className="text-right">

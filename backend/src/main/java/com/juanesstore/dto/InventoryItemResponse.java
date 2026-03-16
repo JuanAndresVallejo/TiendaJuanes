@@ -9,9 +9,11 @@ public class InventoryItemResponse {
   private String size;
   private String sku;
   private Integer stock;
+  private String imageUrl;
 
   public InventoryItemResponse(Long productId, String productName, String refCode,
-                               Long productVariantId, String color, String size, String sku, Integer stock) {
+                               Long productVariantId, String color, String size, String sku, Integer stock,
+                               String imageUrl) {
     this.productId = productId;
     this.productName = productName;
     this.refCode = refCode;
@@ -20,6 +22,7 @@ public class InventoryItemResponse {
     this.size = size;
     this.sku = sku;
     this.stock = stock;
+    this.imageUrl = imageUrl;
   }
 
   public Long getProductId() {
@@ -52,5 +55,9 @@ public class InventoryItemResponse {
 
   public Integer getStock() {
     return stock;
+  }
+
+  public String getImageUrl() {
+    return imageUrl;
   }
 }

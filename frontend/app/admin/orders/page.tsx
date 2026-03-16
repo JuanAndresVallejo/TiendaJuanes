@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { getOrders, updateOrderStatus } from "../../../services/admin";
 
 export default function AdminOrdersPage() {
@@ -30,11 +31,13 @@ export default function AdminOrdersPage() {
               <th className="p-3">ID</th>
               <th className="p-3">Cliente</th>
               <th className="p-3">Fecha</th>
+              <th className="p-3">Pago</th>
               <th className="p-3">Total</th>
               <th className="p-3">Estado</th>
               <th className="p-3">Metodo</th>
               <th className="p-3">Direccion</th>
               <th className="p-3">Notas</th>
+              <th className="p-3">Detalle</th>
             </tr>
           </thead>
           <tbody>
@@ -43,6 +46,11 @@ export default function AdminOrdersPage() {
                 <td className="p-3">{order.id}</td>
                 <td className="p-3">{order.customerName}</td>
                 <td className="p-3">{new Date(order.createdAt).toLocaleDateString("es-CO")}</td>
+                <td className="p-3">
+                  {order.paymentDate
+                    ? new Date(order.paymentDate).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
+                    : "-"}
+                </td>
                 <td className="p-3">${order.totalAmount.toLocaleString("es-CO")}</td>
                 <td className="p-3">
                   <select
@@ -65,6 +73,14 @@ export default function AdminOrdersPage() {
                 <td className="p-3">{order.paymentMethod || "MercadoPago"}</td>
                 <td className="p-3">{order.shippingAddress || "-"}</td>
                 <td className="p-3">{order.notes || "-"}</td>
+                <td className="p-3">
+                  <Link
+                    href={`/admin/orders/${order.id}`}
+                    className="text-xs uppercase tracking-[0.2em] text-terracotta"
+                  >
+                    Ver
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>

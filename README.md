@@ -65,12 +65,20 @@ Addresses:
 - `GET /api/addresses`
 - `POST /api/addresses`
 - `PUT /api/addresses/{id}/default`
+- `PUT /api/addresses/{id}`
+- `DELETE /api/addresses/{id}`
 
 Products:
-- `GET /api/products`
+- `GET /api/products` (lista completa)
+- `GET /api/products/paged?page=0&size=20&sort=created_at&dir=desc`
 - `GET /api/products/{id}`
-- `GET /api/products/search?q=`
-- `GET /api/products/filter`
+- `GET /api/products/search?q=&page=0&size=20`
+- `GET /api/products/filter?category&brand&size&minPrice&maxPrice&page=0&size=20`
+- `GET /api/products/featured?limit=6`
+- `GET /api/products/new?limit=6`
+- `GET /api/products/best-sellers?limit=6`
+- `GET /api/products/{id}/related?limit=6`
+- `GET /api/products/by-ids?ids=1,2,3`
 
 Coupons:
 - `POST /api/coupons/validate`
@@ -84,7 +92,9 @@ Cart:
 Orders:
 - `POST /api/orders/create`
 - `GET /api/orders/my-orders`
+- `GET /api/orders/{id}`
 - `GET /api/orders/{id}/tracking`
+- `POST /api/orders/{id}/reorder`
 
 Users:
 - `GET /api/users/me`
@@ -101,15 +111,21 @@ Admin:
 - `POST /api/admin/products`
 - `PUT /api/admin/products/{id}`
 - `DELETE /api/admin/products/{id}`
-- `GET /api/admin/orders`
+- `GET /api/admin/orders?page=0&size=20`
+- `GET /api/admin/orders/{id}`
 - `PUT /api/admin/orders/update-status`
 - `GET /api/admin/inventory`
 - `PUT /api/admin/inventory/update`
 - `GET /api/admin/dashboard/stats`
+- `GET /api/admin/analytics`
 - `GET /api/admin/coupons`
 - `POST /api/admin/coupons`
 - `PUT /api/admin/coupons/{id}`
 - `DELETE /api/admin/coupons/{id}`
+- `GET /api/admin/banners`
+- `POST /api/admin/banners`
+- `PUT /api/admin/banners/{id}`
+- `DELETE /api/admin/banners/{id}`
 
 ## Notas
 
@@ -117,3 +133,5 @@ Admin:
 - Redis se usa para cachear productos y busquedas.
 - Emails requieren configurar SMTP en variables de entorno.
 - En desarrollo, el footer muestra el estado de servicios (backend, API, postgres, redis, nginx, MercadoPago, SMTP).
+- Inventario protegido con optimistic locking en variantes.
+- Checkout permite PSE (MercadoPago), Transferencia y Contraentrega.
