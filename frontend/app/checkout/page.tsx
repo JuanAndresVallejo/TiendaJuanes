@@ -28,6 +28,7 @@ export default function CheckoutPage() {
   const { show } = useToast();
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState(0);
+  const [notes, setNotes] = useState("");
 
   const cityOptions = useMemo(() => departments[department] || [], [department]);
   const [isBeforeTwoPm, setIsBeforeTwoPm] = useState(() => {
@@ -108,7 +109,8 @@ export default function CheckoutPage() {
         department,
         city,
         addressLine,
-        express: express && canUseExpress
+        express: express && canUseExpress,
+        notes: notes.trim() || undefined
       });
 
       const preference = await createPreference(order.id);
@@ -250,6 +252,17 @@ export default function CheckoutPage() {
               Aplicar
             </button>
           </div>
+        </div>
+
+        <div className="grid gap-2">
+          <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Notas u observaciones</label>
+          <textarea
+            rows={3}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
+            placeholder="Ej: Entregar en portería, timbre no funciona, etc."
+          />
         </div>
 
         <div className="flex items-center justify-between text-sm">

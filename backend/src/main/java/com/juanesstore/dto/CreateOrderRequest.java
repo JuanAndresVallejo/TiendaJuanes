@@ -11,6 +11,8 @@ public class CreateOrderRequest {
 
   private Boolean express;
 
+  private String notes;
+
   public Long getAddressId() {
     return addressId;
   }
@@ -49,5 +51,13 @@ public class CreateOrderRequest {
 
   public void setExpress(Boolean express) {
     this.express = express;
+  }
+
+  public String getNotes() {
+    return notes;
+  }
+
+  public void setNotes(String notes) {
+    this.notes = notes;
   }
 }

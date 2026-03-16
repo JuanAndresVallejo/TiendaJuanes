@@ -41,17 +41,8 @@ function StatusPill({ label, status }: { label: string; status: ServiceStatus })
 
 export default function DevStatusBar() {
   const [status, setStatus] = useState<HealthResponse>(defaultStatus);
-  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const host = window.location.hostname;
-    const shouldShow =
-      host === "localhost" || host === "127.0.0.1" || process.env.NEXT_PUBLIC_STATUS_BANNER === "true";
-    setVisible(shouldShow);
-  }, []);
-
-  useEffect(() => {
-    if (!visible) return;
     let active = true;
     const load = async () => {
       try {
@@ -81,9 +72,7 @@ export default function DevStatusBar() {
       active = false;
       clearInterval(id);
     };
-  }, [visible]);
-
-  if (!visible) return null;
+  }, []);
 
   return (
     <div className="bg-ink/95 border-t border-cream/10">

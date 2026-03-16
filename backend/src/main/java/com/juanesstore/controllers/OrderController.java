@@ -45,6 +45,12 @@ public class OrderController {
     return ResponseEntity.ok(orderService.getMyOrders(user));
   }
 
+  @GetMapping("/{id}")
+  public ResponseEntity<OrderResponse> getOrder(@PathVariable Long id) {
+    User user = securityUtils.getCurrentUser();
+    return ResponseEntity.ok(orderService.getOrderById(user, id));
+  }
+
   @GetMapping("/{id}/tracking")
   public ResponseEntity<List<OrderStatusHistoryResponse>> tracking(@PathVariable Long id) {
     User user = securityUtils.getCurrentUser();

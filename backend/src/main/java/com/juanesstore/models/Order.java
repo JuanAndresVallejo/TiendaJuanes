@@ -34,6 +34,9 @@ public class Order {
   @Column(name = "shipping_type", nullable = false)
   private String shippingType;
 
+  @Column(name = "notes")
+  private String notes;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
@@ -99,6 +102,14 @@ public class Order {
 
   public void setShippingType(String shippingType) {
     this.shippingType = shippingType;
+  }
+
+  public String getNotes() {
+    return notes;
+  }
+
+  public void setNotes(String notes) {
+    this.notes = notes;
   }
 
   public Instant getCreatedAt() {

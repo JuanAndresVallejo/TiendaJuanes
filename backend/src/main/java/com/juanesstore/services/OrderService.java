@@ -68,6 +68,7 @@ public class OrderService {
     order.setPaymentStatus(PaymentStatus.PENDING);
     order.setShippingAddress(address.getDepartment() + ", " + address.getCity() + " - " + address.getAddressLine());
     order.setShippingType(shipping.type);
+    order.setNotes(request.getNotes());
 
     BigDecimal total = BigDecimal.ZERO;
     for (CartItem cartItem : cartItems) {
@@ -103,6 +104,16 @@ public class OrderService {
         .collect(Collectors.toList());
   }
 
+  @Transactional(readOnly = true)
+  public OrderResponse getOrderById(User user, Long id) {
+    Order order = orderRepository.findById(id)
+        .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+    if (!order.getUser().getId().equals(user.getId())) {
+      throw new IllegalArgumentException("Order not found");
+    }
+    return toResponse(order);
+  }
+
   private OrderResponse toResponse(Order order) {
     List<OrderItemResponse> items = order.getItems().stream()
         .map(item -> new OrderItemResponse(
@@ -122,6 +133,7 @@ public class OrderService {
         order.getPaymentStatus().name(),
         order.getShippingAddress(),
         order.getShippingType(),
+        order.getNotes(),
         order.getCreatedAt(),
         items
     );

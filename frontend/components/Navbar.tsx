@@ -52,13 +52,26 @@ export default function Navbar() {
         </form>
         <nav className="flex items-center gap-6 text-sm uppercase tracking-[0.2em]">
           <Link href="/productos" className="hover:text-terracotta">Productos</Link>
-          <Link href="/carrito" className="hover:text-terracotta">Mi carrito</Link>
-          {isAuthenticated ? (
+          {role !== "ADMIN" && (
+            <Link href="/carrito" className="hover:text-terracotta">Mi carrito</Link>
+          )}
+          {isAuthenticated && role !== "ADMIN" ? (
             <>
               <Link href="/mis-pedidos" className="hover:text-terracotta">Mis pedidos</Link>
               <Link href={profileHref} className="hover:text-terracotta">
                 {profileLabel}
               </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="hover:text-terracotta uppercase tracking-[0.2em]"
+              >
+                Cerrar sesión
+              </button>
+            </>
+          ) : isAuthenticated && role === "ADMIN" ? (
+            <>
+              <Link href="/admin/dashboard" className="hover:text-terracotta">Panel admin</Link>
               <button
                 type="button"
                 onClick={handleLogout}

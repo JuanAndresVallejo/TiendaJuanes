@@ -18,13 +18,22 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getDashboardStats().then(setStats).catch(() => setStats(null));
+    getDashboardStats()
+      .then((data) => {
+        setStats(data);
+        setError(null);
+      })
+      .catch(() => {
+        setStats(null);
+        setError("No se pudieron cargar las metricas");
+      });
   }, []);
 
   if (!stats) {
-    return <p>Cargando metricas...</p>;
+    return <p className="text-terracotta">{error || "Cargando metricas..."}</p>;
   }
 
   const salesByDay = {

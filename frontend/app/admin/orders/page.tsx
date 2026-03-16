@@ -33,6 +33,8 @@ export default function AdminOrdersPage() {
               <th className="p-3">Total</th>
               <th className="p-3">Estado</th>
               <th className="p-3">Metodo</th>
+              <th className="p-3">Direccion</th>
+              <th className="p-3">Notas</th>
             </tr>
           </thead>
           <tbody>
@@ -61,6 +63,8 @@ export default function AdminOrdersPage() {
                   </select>
                 </td>
                 <td className="p-3">{order.paymentMethod || "MercadoPago"}</td>
+                <td className="p-3">{order.shippingAddress || "-"}</td>
+                <td className="p-3">{order.notes || "-"}</td>
               </tr>
             ))}
           </tbody>

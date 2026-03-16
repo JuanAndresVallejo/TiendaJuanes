@@ -1,18 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getOrderTracking } from "../../../services/orders";
+import { getOrder, getOrderTracking } from "../../../services/orders";
 
-const steps = [
-  "PENDING",
-  "PAID",
-  "PACKING",
-  "SHIPPED",
-  "DELIVERED"
-];
+const steps = ["PAID", "PACKING", "SHIPPED", "DELIVERED"];
 
 const labels: Record<string, string> = {
-  PENDING: "Pedido recibido",
   PAID: "Pago confirmado",
   PACKING: "Empacando pedido",
   SHIPPED: "Enviado",
@@ -21,9 +14,11 @@ const labels: Record<string, string> = {
 
 export default function OrderTrackingPage({ params }: { params: { id: string } }) {
   const [history, setHistory] = useState<any[]>([]);
+  const [order, setOrder] = useState<any | null>(null);
 
   useEffect(() => {
     getOrderTracking(Number(params.id)).then(setHistory).catch(() => setHistory([]));
+    getOrder(Number(params.id)).then(setOrder).catch(() => setOrder(null));
   }, [params.id]);
 
   const currentStatus = history.length ? history[history.length - 1].status : "PENDING";
@@ -31,9 +26,27 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
   return (
     <section className="max-w-4xl mx-auto px-6 py-12">
       <h1 className="font-display text-4xl">Tracking pedido #{params.id}</h1>
+      {order && (
+        <div className="mt-6 bg-white/70 border border-sand rounded-2xl p-4 text-sm">
+          <p>Total: <span className="font-semibold">${order.totalAmount.toLocaleString("es-CO")}</span></p>
+          <p>Estado: {labels[currentStatus] || "Pago pendiente"}</p>
+          {order.notes && (
+            <p className="mt-2 text-ink/70">Notas: {order.notes}</p>
+          )}
+          <div className="mt-4 space-y-2">
+            {order.items.map((item: any) => (
+              <div key={item.productVariantId} className="flex items-center justify-between">
+                <span>{item.name} · {item.color} · {item.size}</span>
+                <span>x{item.quantity}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="mt-8 space-y-4">
         {steps.map((step) => {
-          const completed = steps.indexOf(step) <= steps.indexOf(currentStatus);
+          const currentIndex = steps.indexOf(currentStatus);
+          const completed = currentIndex >= 0 && steps.indexOf(step) <= currentIndex;
           return (
             <div key={step} className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${completed ? "bg-olive" : "bg-sand"}`} />

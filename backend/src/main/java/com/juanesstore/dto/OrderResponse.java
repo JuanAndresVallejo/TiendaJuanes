@@ -11,11 +11,12 @@ public class OrderResponse {
   private String paymentStatus;
   private String shippingAddress;
   private String shippingType;
+  private String notes;
   private Instant createdAt;
   private List<OrderItemResponse> items;
 
   public OrderResponse(Long id, BigDecimal totalAmount, String status, String paymentStatus,
-                       String shippingAddress, String shippingType, Instant createdAt,
+                       String shippingAddress, String shippingType, String notes, Instant createdAt,
                        List<OrderItemResponse> items) {
     this.id = id;
     this.totalAmount = totalAmount;
@@ -23,6 +24,7 @@ public class OrderResponse {
     this.paymentStatus = paymentStatus;
     this.shippingAddress = shippingAddress;
     this.shippingType = shippingType;
+    this.notes = notes;
     this.createdAt = createdAt;
     this.items = items;
   }
@@ -49,6 +51,10 @@ public class OrderResponse {
 
   public String getShippingType() {
     return shippingType;
+  }
+
+  public String getNotes() {
+    return notes;
   }
 
   public Instant getCreatedAt() {

@@ -7,6 +7,7 @@ export async function createOrder(payload: {
   city: string;
   addressLine: string;
   express: boolean;
+  notes?: string;
 }) {
   const token = getToken();
   const headers: Record<string, string> = {
@@ -39,5 +40,14 @@ export async function getOrderTracking(orderId: number) {
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   });
   if (!res.ok) throw new Error("No se pudo cargar el tracking");
+  return res.json();
+}
+
+export async function getOrder(orderId: number) {
+  const token = getToken();
+  const res = await fetch(apiUrl(`/orders/${orderId}`), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+  if (!res.ok) throw new Error("No se pudo cargar el pedido");
   return res.json();
 }

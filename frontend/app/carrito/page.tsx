@@ -88,12 +88,22 @@ export default function CartPage() {
               <span>Total</span>
               <span className="text-terracotta font-semibold">${total.toLocaleString("es-CO")}</span>
             </div>
-            <a
-              href="/checkout"
-              className="mt-6 block text-center rounded-full bg-terracotta text-cream py-3 uppercase tracking-[0.2em]"
-            >
-              Finalizar compra
-            </a>
+            {items.length > 0 ? (
+              <a
+                href="/checkout"
+                className="mt-6 block text-center rounded-full bg-terracotta text-cream py-3 uppercase tracking-[0.2em]"
+              >
+                Finalizar compra
+              </a>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="mt-6 w-full rounded-full bg-sand text-ink/50 py-3 uppercase tracking-[0.2em] cursor-not-allowed"
+              >
+                Finalizar compra
+              </button>
+            )}
           </div>
         </div>
       )}

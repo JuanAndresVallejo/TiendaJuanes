@@ -1,17 +1,17 @@
 export default async function HomePage() {
   const brands = [
-    { name: "Levis", logo: "/brands/levis.svg" },
-    { name: "Nike", logo: "/brands/nike.svg" },
-    { name: "Adidas", logo: "/brands/adidas.svg" },
-    { name: "Puma", logo: "/brands/puma.svg" },
-    { name: "Tommy Hilfiger", logo: "/brands/tommy.svg" },
-    { name: "Calvin Klein", logo: "/brands/calvin.svg" },
-    { name: "Ralph Lauren", logo: "/brands/ralph.svg" },
-    { name: "New Balance", logo: "/brands/newbalance.svg" },
-    { name: "Guess", logo: "/brands/guess.svg" },
-    { name: "Vans", logo: "/brands/vans.svg" },
-    { name: "Reebok", logo: "/brands/reebok.svg" },
-    { name: "Converse", logo: "/brands/converse.svg" }
+    { name: "Levis", short: "LEVIS", width: 96 },
+    { name: "Nike", short: "NIKE", width: 96 },
+    { name: "Adidas", short: "ADIDAS", width: 96 },
+    { name: "Puma", short: "PUMA", width: 96 },
+    { name: "Tommy Hilfiger", short: "TOMMY HILFIGER", width: 140 },
+    { name: "Calvin Klein", short: "CALVIN KLEIN", width: 140 },
+    { name: "Ralph Lauren", short: "RALPH LAUREN", width: 140 },
+    { name: "New Balance", short: "NEW BALANCE", width: 140 },
+    { name: "Guess", short: "GUESS", width: 96 },
+    { name: "Vans", short: "VANS", width: 96 },
+    { name: "Reebok", short: "REEBOK", width: 96 },
+    { name: "Converse", short: "CONVERSE", width: 120 }
   ];
   const track = [...brands, ...brands];
 
@@ -52,14 +52,25 @@ export default async function HomePage() {
                 aria-label={brand.name}
                 title={brand.name}
               >
-                <img
-                  src={brand.logo}
-                  alt=""
+                <svg
                   className="brand-logo"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
+                  width={brand.width}
+                  height={32}
+                  viewBox={`0 0 ${brand.width} 32`}
                   aria-hidden="true"
-                />
+                >
+                  <rect width={brand.width} height="32" rx="6" fill="#1f1c17" />
+                  <text
+                    x="50%"
+                    y="62%"
+                    textAnchor="middle"
+                    fontFamily="Arial, sans-serif"
+                    fontSize={brand.width > 120 ? 10 : 12}
+                    fill="#f6f2ea"
+                  >
+                    {brand.short}
+                  </text>
+                </svg>
                 <span className="text-sm uppercase tracking-[0.2em]">{brand.name}</span>
               </div>
             ))}

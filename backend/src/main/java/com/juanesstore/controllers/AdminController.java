@@ -103,7 +103,9 @@ public class AdminController {
               order.getCreatedAt(),
               order.getTotalAmount(),
               order.getStatus().name(),
-              paymentMethod
+              paymentMethod,
+              order.getShippingAddress(),
+              order.getNotes()
           );
         })
         .collect(Collectors.toList());

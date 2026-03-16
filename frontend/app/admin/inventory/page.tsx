@@ -5,10 +5,17 @@ import { getInventory, updateInventory } from "../../../services/admin";
 
 export default function AdminInventoryPage() {
   const [items, setItems] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
-    const data = await getInventory();
-    setItems(data);
+    try {
+      setError(null);
+      const data = await getInventory();
+      setItems(data);
+    } catch (e) {
+      setItems([]);
+      setError("No se pudo cargar el inventario");
+    }
   };
 
   useEffect(() => {
@@ -23,6 +30,7 @@ export default function AdminInventoryPage() {
   return (
     <div>
       <h2 className="font-display text-2xl mb-6">Inventario</h2>
+      {error && <p className="text-terracotta mb-4">{error}</p>}
       <div className="overflow-x-auto bg-white/70 border border-sand rounded-2xl">
         <table className="w-full text-sm">
           <thead className="text-left uppercase tracking-[0.2em] text-xs">
@@ -37,20 +45,25 @@ export default function AdminInventoryPage() {
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
+            {items.map((item) => {
+              const lowStock = item.stock <= 5;
+              return (
               <tr key={item.productVariantId} className="border-t border-sand/60">
-                <td className="p-3">{item.productName}</td>
+                <td className="p-3">
+                  {item.productName}
+                  {lowStock && <span className="ml-2 text-xs text-terracotta">Bajo stock</span>}
+                </td>
                 <td className="p-3">{item.refCode}</td>
                 <td className="p-3">{item.color}</td>
                 <td className="p-3">{item.size}</td>
                 <td className="p-3">{item.sku}</td>
-                <td className="p-3">{item.stock}</td>
+                <td className={`p-3 ${lowStock ? "text-terracotta font-semibold" : ""}`}>{item.stock}</td>
                 <td className="p-3 flex gap-2">
                   <button onClick={() => adjust(item.productVariantId, 1)} className="text-olive">+1</button>
                   <button onClick={() => adjust(item.productVariantId, -1)} className="text-terracotta">-1</button>
                 </td>
               </tr>
-            ))}
+            );})}
           </tbody>
         </table>
       </div>
