@@ -24,6 +24,9 @@ public class OrderItem {
   @Column(nullable = false)
   private BigDecimal price;
 
+  @Column(nullable = false)
+  private Boolean packed = false;
+
   public Long getId() {
     return id;
   }
@@ -62,5 +65,13 @@ public class OrderItem {
 
   public void setPrice(BigDecimal price) {
     this.price = price;
+  }
+
+  public Boolean getPacked() {
+    return packed;
+  }
+
+  public void setPacked(Boolean packed) {
+    this.packed = packed;
   }
 }

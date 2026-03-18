@@ -70,6 +70,7 @@ Addresses:
 
 Products:
 - `GET /api/products` (lista completa)
+- `GET /api/products?search=&category=&brand=&sizeParam=&color=&minPrice=&maxPrice=&page=0&size=20&sort=created_at&dir=desc` (busqueda unificada)
 - `GET /api/products/paged?page=0&size=20&sort=created_at&dir=desc`
 - `GET /api/products/{id}`
 - `GET /api/products/search?q=&page=0&size=20`
@@ -113,9 +114,13 @@ Admin:
 - `DELETE /api/admin/products/{id}`
 - `GET /api/admin/orders?page=0&size=20`
 - `GET /api/admin/orders/{id}`
+- `GET /api/admin/orders/{id}/notes`
+- `POST /api/admin/orders/{id}/notes`
+- `PATCH /api/admin/orders/{id}/items/{itemId}/pack`
 - `PUT /api/admin/orders/update-status`
 - `GET /api/admin/inventory`
 - `PUT /api/admin/inventory/update`
+- `GET /api/admin/inventory/history?productVariantId=&limit=50`
 - `GET /api/admin/dashboard/stats`
 - `GET /api/admin/analytics`
 - `GET /api/admin/coupons`
@@ -126,6 +131,13 @@ Admin:
 - `POST /api/admin/banners`
 - `PUT /api/admin/banners/{id}`
 - `DELETE /api/admin/banners/{id}`
+- `GET /api/admin/reports/sales/export`
+
+Favorites:
+- `GET /api/favorites`
+- `POST /api/favorites/{productId}`
+- `DELETE /api/favorites/{productId}`
+- `GET /api/favorites/{productId}`
 
 ## Notas
 

@@ -60,6 +60,14 @@ public class ProductService {
   }
 
   @Transactional(readOnly = true)
+  public Page<ProductResponse> searchAndFilterPaged(String query, String category, String brand, String size,
+                                                    String color, BigDecimal minPrice, BigDecimal maxPrice,
+                                                    Pageable pageable) {
+    return productRepository.searchAndFilter(query, category, brand, size, color, minPrice, maxPrice, pageable)
+        .map(this::toResponse);
+  }
+
+  @Transactional(readOnly = true)
   public Page<ProductResponse> getPaged(int page, int size, String sort, String direction) {
     Sort.Direction dir = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
     Pageable pageable;

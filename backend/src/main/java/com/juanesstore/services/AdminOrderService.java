@@ -58,13 +58,15 @@ public class AdminOrderService {
     Optional<ProductImage> firstImage = product.getImages().stream().findFirst();
     String imageUrl = firstImage.map(ProductImage::getImageUrl).orElse(null);
     return new OrderDetailDTO.OrderDetailItemDTO(
+        item.getId(),
         product.getName(),
         product.getRefCode(),
         variant.getSize(),
         variant.getColor(),
         item.getQuantity(),
         item.getPrice(),
-        imageUrl
+        imageUrl,
+        Boolean.TRUE.equals(item.getPacked())
     );
   }
 }

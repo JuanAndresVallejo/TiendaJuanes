@@ -104,6 +104,7 @@ public class OrderService {
       orderItem.setProductVariant(variant);
       orderItem.setQuantity(cartItem.getQuantity());
       orderItem.setPrice(price);
+      orderItem.setPacked(false);
       order.getItems().add(orderItem);
     }
 
@@ -113,7 +114,7 @@ public class OrderService {
       var validation = couponService.validate(
           new com.juanesstore.dto.CouponValidateRequest(request.getCouponCode(), orderSubtotal)
       );
-      if (!validation.getValid()) {
+      if (!validation.isValid()) {
         throw new IllegalArgumentException(validation.getMessage());
       }
       discount = validation.getDiscount();

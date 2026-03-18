@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import ProductCard from "../../components/ProductCard";
 import SkeletonCard from "../../components/SkeletonCard";
-import { filterProducts, getProductsPaged, searchProducts, Product, ProductPage } from "../../services/products";
-import { useSearchParams } from "next/navigation";
+import { getProductsAdvanced, Product, ProductPage } from "../../services/products";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function ProductsClient() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
+  const router = useRouter();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,37 +25,47 @@ export default function ProductsClient() {
     minPrice: "",
     maxPrice: ""
   });
+  const [searchText, setSearchText] = useState(query);
+  const [debouncedSearch, setDebouncedSearch] = useState(query);
 
   const pageSize = 20;
   const hasFilters = useMemo(() => Object.values(filters).some((v) => v !== ""), [filters]);
 
+  useEffect(() => {
+    setSearchText(query);
+    setDebouncedSearch(query);
+  }, [query]);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearch(searchText);
+      if (searchText.trim()) {
+        router.replace(`/productos?q=${encodeURIComponent(searchText.trim())}`);
+      } else {
+        router.replace("/productos");
+      }
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [searchText, router]);
+
   const load = async () => {
     setLoading(true);
     try {
-      if (query.trim()) {
-        const data = await searchProducts(query.trim(), page, pageSize);
-        setProducts(data.items);
-        setTotalPages(data.totalPages || 1);
-        setTotalElements(data.totalElements || 0);
-      } else if (hasFilters) {
-        const data: ProductPage = await filterProducts({
-          category: filters.category.trim() || undefined,
-          brand: filters.brand.trim() || undefined,
-          size: filters.size.trim() || undefined,
-          minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
-          maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined,
-          page,
-          pageSize: pageSize
-        });
-        setProducts(data.items);
-        setTotalPages(data.totalPages || 1);
-        setTotalElements(data.totalElements || 0);
-      } else {
-        const data = await getProductsPaged({ page, size: pageSize, sort, dir });
-        setProducts(data.items);
-        setTotalPages(data.totalPages || 1);
-        setTotalElements(data.totalElements || 0);
-      }
+      const data: ProductPage = await getProductsAdvanced({
+        search: debouncedSearch.trim() || undefined,
+        category: filters.category.trim() || undefined,
+        brand: filters.brand.trim() || undefined,
+        size: filters.size.trim() || undefined,
+        minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
+        maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined,
+        page,
+        sizeParam: pageSize,
+        sort,
+        dir
+      });
+      setProducts(data.items);
+      setTotalPages(data.totalPages || 1);
+      setTotalElements(data.totalElements || 0);
     } catch {
       setProducts([]);
       setTotalPages(1);
@@ -67,7 +78,7 @@ export default function ProductsClient() {
   useEffect(() => {
     setPage(0);
     load();
-  }, [query, hasFilters, filters, sort, dir]);
+  }, [debouncedSearch, hasFilters, filters, sort, dir]);
 
   useEffect(() => {
     load();
@@ -88,6 +99,15 @@ export default function ProductsClient() {
           <h1 className="font-display text-4xl mt-3">Explora nuestros productos</h1>
         </div>
         <span className="text-sm text-ink/70">{totalElements} productos</span>
+      </div>
+
+      <div className="mt-6">
+        <input
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          placeholder="Buscar productos en tiempo real"
+          className="w-full md:max-w-md rounded-full border border-sand bg-white/80 px-5 py-3 text-sm"
+        />
       </div>
 
       <div className="mt-10 grid gap-8 md:grid-cols-[260px_1fr]">

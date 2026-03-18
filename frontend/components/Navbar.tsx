@@ -38,6 +38,8 @@ export default function Navbar() {
 
   const profileHref = role === "ADMIN" ? "/admin/dashboard" : "/mi-perfil";
   const profileLabel = fullName ? `Mi perfil (${fullName.split(" ")[0]})` : "Mi perfil";
+  const isAdmin = isAuthenticated && role === "ADMIN";
+  const isCustomer = isAuthenticated && role !== "ADMIN";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,10 +76,10 @@ export default function Navbar() {
           {!isAuthenticated && (
             <>
               <Link href="/productos" className="hover:text-terracotta">Productos</Link>
-              <Link href="/login" className="hover:text-terracotta">Iniciar sesión</Link>
+              <Link href="/login" className="hover:text-terracotta">Iniciar sesion</Link>
             </>
           )}
-          {isAuthenticated && role !== "ADMIN" ? (
+          {isCustomer && (
             <>
               <Link href="/productos" className="hover:text-terracotta">Productos</Link>
               <Link href="/carrito" className="hover:text-terracotta relative">
@@ -89,6 +91,7 @@ export default function Navbar() {
                 )}
               </Link>
               <Link href="/mis-pedidos" className="hover:text-terracotta">Mis pedidos</Link>
+              <Link href="/mi-cuenta/favoritos" className="hover:text-terracotta">Favoritos</Link>
               <Link href={profileHref} className="hover:text-terracotta">
                 {profileLabel}
               </Link>
@@ -97,10 +100,11 @@ export default function Navbar() {
                 onClick={handleLogout}
                 className="hover:text-terracotta uppercase tracking-[0.2em]"
               >
-                Cerrar sesión
+                Cerrar sesion
               </button>
             </>
-          ) : isAuthenticated && role === "ADMIN" ? (
+          )}
+          {isAdmin && (
             <>
               <Link href="/admin/dashboard" className="hover:text-terracotta">Panel admin</Link>
               <button
@@ -108,7 +112,7 @@ export default function Navbar() {
                 onClick={handleLogout}
                 className="hover:text-terracotta uppercase tracking-[0.2em]"
               >
-                Cerrar sesión
+                Cerrar sesion
               </button>
             </>
           )}

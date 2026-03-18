@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { getMyProfile, updateMyPassword, updateMyProfile, UserProfile } from "../../services/profile";
 import { addAddress, getAddresses, Address, deleteAddress, setDefaultAddress, updateAddress } from "../../services/addresses";
 import { useToast } from "../../components/ToastProvider";
@@ -226,6 +227,14 @@ export default function ProfilePage() {
       <div>
         <h1 className="font-display text-4xl">Mi perfil</h1>
         {profile && <p className="mt-2 text-ink/70">{profile.email}</p>}
+        <div className="mt-3">
+          <Link
+            href="/mi-cuenta/favoritos"
+            className="text-xs uppercase tracking-[0.2em] text-terracotta"
+          >
+            Ver favoritos
+          </Link>
+        </div>
       </div>
 
       {loading ? (

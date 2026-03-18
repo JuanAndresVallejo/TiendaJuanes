@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { addToCart } from "../services/cart";
+import { addFavorite, isFavorite, removeFavorite } from "../services/favorites";
 import type { Product } from "../services/products";
 import { useToast } from "./ToastProvider";
 
@@ -13,21 +14,48 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const [size, setSize] = useState(sizes[0] || "");
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [favoriting, setFavoriting] = useState(false);
+  const [favorite, setFavorite] = useState(false);
   const { show } = useToast();
 
   const selectedVariant = product.variants.find((v) => v.color === color && v.size === size);
   const isOutOfStock = !selectedVariant || selectedVariant.stock <= 0;
+
+  useEffect(() => {
+    isFavorite(product.id)
+      .then(setFavorite)
+      .catch(() => setFavorite(false));
+  }, [product.id]);
 
   const handleAdd = async () => {
     if (!selectedVariant || selectedVariant.stock <= 0) return;
     try {
       setLoading(true);
       await addToCart(selectedVariant.id, quantity);
-      show("Producto añadido al carrito");
+      show("Producto anadido al carrito");
     } catch (error) {
-      show("Debes iniciar sesión para agregar al carrito", "error");
+      show("Debes iniciar sesion para agregar al carrito", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleFavorite = async () => {
+    try {
+      setFavoriting(true);
+      if (favorite) {
+        await removeFavorite(product.id);
+        setFavorite(false);
+        show("Removido de favoritos");
+      } else {
+        await addFavorite(product.id);
+        setFavorite(true);
+        show("Agregado a favoritos");
+      }
+    } catch (error) {
+      show("Debes iniciar sesion para usar favoritos", "error");
+    } finally {
+      setFavoriting(false);
     }
   };
 
@@ -77,13 +105,23 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           </button>
         </div>
       </div>
-      <button
-        onClick={handleAdd}
-        disabled={loading || isOutOfStock}
-        className="mt-2 w-full rounded-full bg-terracotta text-cream py-3 uppercase tracking-[0.2em]"
-      >
-        {isOutOfStock ? "Sin stock" : loading ? "Agregando..." : "Añadir al carrito"}
-      </button>
+      <div className="grid gap-3">
+        <button
+          onClick={handleAdd}
+          disabled={loading || isOutOfStock}
+          className="mt-2 w-full rounded-full bg-terracotta text-cream py-3 uppercase tracking-[0.2em]"
+        >
+          {isOutOfStock ? "Sin stock" : loading ? "Agregando..." : "Anadir al carrito"}
+        </button>
+        <button
+          type="button"
+          onClick={toggleFavorite}
+          disabled={favoriting}
+          className="w-full rounded-full border border-ink py-3 uppercase tracking-[0.2em] text-xs disabled:opacity-50"
+        >
+          {favoriting ? "Actualizando..." : favorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+        </button>
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,10 +20,43 @@ public class ProductController {
   }
 
   @GetMapping
-  public ResponseEntity<List<ProductResponse>> getProducts(@RequestParam(required = false) Integer page,
-                                                           @RequestParam(required = false) Integer size) {
-    if (page != null && size != null) {
-      return ResponseEntity.ok(productService.getPaged(page, size, "created_at", "desc").getContent());
+  public ResponseEntity<?> getProducts(@RequestParam(required = false) Integer page,
+                                       @RequestParam(required = false) Integer size,
+                                       @RequestParam(required = false) String search,
+                                       @RequestParam(required = false) String category,
+                                       @RequestParam(required = false) String brand,
+                                       @RequestParam(required = false) String sizeParam,
+                                       @RequestParam(required = false) String color,
+                                       @RequestParam(required = false) BigDecimal minPrice,
+                                       @RequestParam(required = false) BigDecimal maxPrice,
+                                       @RequestParam(required = false, defaultValue = "created_at") String sort,
+                                       @RequestParam(required = false, defaultValue = "desc") String dir) {
+    boolean hasFilters = (search != null && !search.isBlank())
+        || (category != null && !category.isBlank())
+        || (brand != null && !brand.isBlank())
+        || (sizeParam != null && !sizeParam.isBlank())
+        || (color != null && !color.isBlank())
+        || minPrice != null
+        || maxPrice != null;
+
+    if (page != null || size != null || hasFilters) {
+      int safePage = page == null ? 0 : page;
+      int safeSize = size == null ? 20 : size;
+      Sort.Direction direction = "desc".equalsIgnoreCase(dir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+      String sortBy = "createdAt";
+      if ("price".equalsIgnoreCase(sort)) sortBy = "basePrice";
+      if ("name".equalsIgnoreCase(sort)) sortBy = "name";
+      if ("created_at".equalsIgnoreCase(sort)) sortBy = "createdAt";
+      PageRequest pageable = PageRequest.of(safePage, safeSize, Sort.by(direction, sortBy));
+
+      if (hasFilters) {
+        Page<ProductResponse> result = productService.searchAndFilterPaged(
+            search, category, brand, sizeParam, color, minPrice, maxPrice, pageable
+        );
+        return ResponseEntity.ok(ProductPageResponse.from(result));
+      }
+      Page<ProductResponse> result = productService.getPaged(safePage, safeSize, sort, dir);
+      return ResponseEntity.ok(ProductPageResponse.from(result));
     }
     return ResponseEntity.ok(productService.getAll());
   }

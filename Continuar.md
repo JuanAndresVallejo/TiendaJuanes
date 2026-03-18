@@ -1,21 +1,23 @@
-# Continuar – contexto rápido del proyecto
+# Continuar - contexto rapido del proyecto
 
 ## Estado general
-El ecommerce está construido y funcional, con backend en Spring Boot + PostgreSQL y frontend en Next.js + Tailwind.  
-Se añadieron cupones, tracking, emails, analytics, cache Redis, y mejoras de seguridad.
-Se incorporó un **banner de estado en el footer (solo dev)** que consulta `/api/health` para verificar servicios.
-Se agregó **detalle de pedidos para admin** y mejoras de performance en queries (N+1, dashboard).
-Se implementaron features tipo Shopify: **destacados, más vendidos, nuevos, tags, descuentos, relacionados y recientemente vistos**.
-Checkout ahora soporta **PSE (MercadoPago), Transferencia y Contraentrega** con validación de cupones.
+El ecommerce esta construido y funcional, con backend en Spring Boot + PostgreSQL y frontend en Next.js + Tailwind.
+Se anadieron cupones, tracking, emails, analytics, cache Redis, y mejoras de seguridad.
+Se incorporo un banner de estado en el footer (solo dev) que consulta `/api/health` para verificar servicios.
+Se agrego detalle de pedidos para admin y mejoras de performance en queries (N+1, dashboard).
+Se implementaron features tipo Shopify: destacados, mas vendidos, nuevos, tags, descuentos, relacionados y recientemente vistos.
+Checkout ahora soporta PSE (MercadoPago), Transferencia y Contraentrega con validacion de cupones.
+Se agregaron favoritos cliente, notas internas admin, export CSV de ventas, historial de inventario y persistencia del checklist de empaque.
+La busqueda de productos se unifico en `/api/products` con filtros y search.
 
 ---
 
-## Lo más importante para continuar
+## Lo mas importante para continuar
 
 ### 1) Seed de productos (50)
-El seed está en `V15__seed_products_after_fix.sql` y es idempotente.
-Ahora genera productos de **ropa, calzado y accesorios** (con actualización de datos si ya existen).
-Si Flyway falla en esa migración:
+El seed esta en `V15__seed_products_after_fix.sql` y es idempotente.
+Ahora genera productos de ropa, calzado y accesorios (con actualizacion de datos si ya existen).
+Si Flyway falla en esa migracion:
 
 ```bash
 sudo docker-compose exec postgres psql -U juanes -d juanes -c "DELETE FROM flyway_schema_history WHERE version='15';"
@@ -53,16 +55,18 @@ Rutas clave:
 - `/productos`, `/producto/[id]`, `/carrito`, `/checkout`
 - `/mis-pedidos`, `/mis-pedidos/[id]`
 - `/mi-perfil` (perfil cliente)
+- `/mi-cuenta/favoritos`
 - `/admin/*` con panel completo
 - `/admin/orders/[id]` (detalle de pedido para empaque)
 
 UI reciente:
 - Carrusel de marcas con logos locales en `frontend/public/brands`
-- Filtros en productos con selects (categoría, marca, talla)
+- Filtros en productos con selects (categoria, marca, talla)
 - Botones de redes: WhatsApp, Instagram y TikTok
-- Checklist de empaque en detalle de pedido admin (estado visual)
-- Catálogo paginado (20 por página) y ordenado (precio/nombre/ventas)
-- Carrito con contador en navbar y actualización sin refrescar
+- Checklist de empaque en detalle de pedido admin (persistente por item)
+- Catalogo paginado (20 por pagina) y ordenado (precio/nombre/ventas)
+- Busqueda en tiempo real unificada en catalogo
+- Carrito con contador en navbar y actualizacion sin refrescar
 - Productos sin stock visibles pero bloqueados para compra
 
 ---
@@ -81,12 +85,11 @@ Dev-only:
 
 ---
 
-## Próximos pasos sugeridos
+## Proximos pasos sugeridos
 
 1. Confirmar backend y DB en limpio
 2. Conectar MercadoPago real
 3. Configurar SMTP real para emails
 4. Deploy en servidor propio
-5. (Opcional) Persistir checklist de empaque en backend
-6. (Opcional) Exportación de reportes y mejoras avanzadas de admin
-7. (Opcional) Historial de inventario y notas internas de pedidos
+5. (Opcional) Mejoras adicionales de admin y reportes
+6. (Opcional) Mejoras a favoritos (icono en cards, filtros)

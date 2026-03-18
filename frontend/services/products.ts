@@ -56,6 +56,34 @@ export async function getProductsPaged(params: {
   return apiGet<ProductPage>(`/products/paged?${query.toString()}`);
 }
 
+export async function getProductsAdvanced(params: {
+  search?: string;
+  category?: string;
+  brand?: string;
+  size?: string;
+  color?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  page?: number;
+  sizeParam?: number;
+  sort?: string;
+  dir?: string;
+}): Promise<ProductPage> {
+  const query = new URLSearchParams();
+  if (params.search) query.set("search", params.search);
+  if (params.category) query.set("category", params.category);
+  if (params.brand) query.set("brand", params.brand);
+  if (params.size) query.set("sizeParam", params.size);
+  if (params.color) query.set("color", params.color);
+  if (params.minPrice !== undefined) query.set("minPrice", String(params.minPrice));
+  if (params.maxPrice !== undefined) query.set("maxPrice", String(params.maxPrice));
+  if (params.page !== undefined) query.set("page", String(params.page));
+  if (params.sizeParam !== undefined) query.set("size", String(params.sizeParam));
+  if (params.sort) query.set("sort", params.sort);
+  if (params.dir) query.set("dir", params.dir);
+  return apiGet<ProductPage>(`/products?${query.toString()}`);
+}
+
 export async function getProduct(id: string): Promise<Product | null> {
   try {
     return await apiGet<Product>(`/products/${id}`);

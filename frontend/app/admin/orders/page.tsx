@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getOrders, updateOrderStatus } from "../../../services/admin";
+import { downloadSalesReport, getOrders, updateOrderStatus } from "../../../services/admin";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
+  const [exporting, setExporting] = useState(false);
 
   const load = async () => {
     const data = await getOrders();
@@ -21,9 +22,28 @@ export default function AdminOrdersPage() {
     await load();
   };
 
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      await downloadSalesReport();
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div>
-      <h2 className="font-display text-2xl mb-6">Pedidos</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="font-display text-2xl">Pedidos</h2>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={exporting}
+          className="rounded-full border border-ink px-4 py-2 text-xs uppercase tracking-[0.2em] disabled:opacity-50"
+        >
+          {exporting ? "Exportando..." : "Exportar CSV"}
+        </button>
+      </div>
       <div className="overflow-x-auto bg-white/70 border border-sand rounded-2xl">
         <table className="w-full text-sm">
           <thead className="text-left uppercase tracking-[0.2em] text-xs">

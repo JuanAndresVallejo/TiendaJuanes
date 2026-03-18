@@ -11,6 +11,14 @@ public class CouponValidateRequest {
   @NotNull
   private BigDecimal orderAmount;
 
+  public CouponValidateRequest() {
+  }
+
+  public CouponValidateRequest(String code, BigDecimal orderAmount) {
+    this.code = code;
+    this.orderAmount = orderAmount;
+  }
+
   public String getCode() {
     return code;
   }

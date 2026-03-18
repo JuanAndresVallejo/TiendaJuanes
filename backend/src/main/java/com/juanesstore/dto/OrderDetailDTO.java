@@ -72,6 +72,7 @@ public class OrderDetailDTO {
   }
 
   public static class OrderDetailItemDTO {
+    private Long itemId;
     private String productName;
     private String productReference;
     private String variantSize;
@@ -79,9 +80,12 @@ public class OrderDetailDTO {
     private Integer quantity;
     private BigDecimal unitPrice;
     private String imageUrl;
+    private boolean packed;
 
-    public OrderDetailItemDTO(String productName, String productReference, String variantSize,
-                              String variantColor, Integer quantity, BigDecimal unitPrice, String imageUrl) {
+    public OrderDetailItemDTO(Long itemId, String productName, String productReference, String variantSize,
+                              String variantColor, Integer quantity, BigDecimal unitPrice, String imageUrl,
+                              boolean packed) {
+      this.itemId = itemId;
       this.productName = productName;
       this.productReference = productReference;
       this.variantSize = variantSize;
@@ -89,6 +93,11 @@ public class OrderDetailDTO {
       this.quantity = quantity;
       this.unitPrice = unitPrice;
       this.imageUrl = imageUrl;
+      this.packed = packed;
+    }
+
+    public Long getItemId() {
+      return itemId;
     }
 
     public String getProductName() {
@@ -117,6 +126,10 @@ public class OrderDetailDTO {
 
     public String getImageUrl() {
       return imageUrl;
+    }
+
+    public boolean isPacked() {
+      return packed;
     }
   }
 }

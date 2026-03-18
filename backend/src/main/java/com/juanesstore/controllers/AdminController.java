@@ -10,18 +10,28 @@ import com.juanesstore.dto.BannerResponse;
 import com.juanesstore.dto.DashboardStatsResponse;
 import com.juanesstore.dto.InventoryItemResponse;
 import com.juanesstore.dto.OrderDetailDTO;
+import com.juanesstore.dto.OrderNoteRequest;
+import com.juanesstore.dto.OrderNoteResponse;
 import com.juanesstore.dto.ProductCreateRequest;
 import com.juanesstore.dto.ProductResponse;
+import com.juanesstore.dto.StockMovementResponse;
 import com.juanesstore.dto.UpdateInventoryRequest;
+import com.juanesstore.dto.UpdateOrderItemPackRequest;
 import com.juanesstore.dto.UpdateOrderStatusRequest;
 import com.juanesstore.models.Order;
+import com.juanesstore.models.OrderItem;
+import com.juanesstore.models.OrderNote;
 import com.juanesstore.models.OrderStatus;
 import com.juanesstore.models.Payment;
 import com.juanesstore.models.ProductVariant;
+import com.juanesstore.models.StockMovement;
 import com.juanesstore.repositories.ChartPointProjection;
+import com.juanesstore.repositories.OrderItemRepository;
+import com.juanesstore.repositories.OrderNoteRepository;
 import com.juanesstore.repositories.OrderRepository;
 import com.juanesstore.repositories.PaymentRepository;
 import com.juanesstore.repositories.ProductVariantRepository;
+import com.juanesstore.repositories.StockMovementRepository;
 import com.juanesstore.repositories.UserRepository;
 import com.juanesstore.services.AdminOrderService;
 import com.juanesstore.services.BannerService;
@@ -29,11 +39,14 @@ import com.juanesstore.services.ProductService;
 import com.juanesstore.services.AdminCouponService;
 import com.juanesstore.services.EmailService;
 import com.juanesstore.services.OrderTrackingService;
+import com.juanesstore.utils.SecurityUtils;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +62,10 @@ public class AdminController {
   private final ProductVariantRepository productVariantRepository;
   private final UserRepository userRepository;
   private final PaymentRepository paymentRepository;
+  private final OrderItemRepository orderItemRepository;
+  private final StockMovementRepository stockMovementRepository;
+  private final OrderNoteRepository orderNoteRepository;
+  private final SecurityUtils securityUtils;
   private final AdminCouponService adminCouponService;
   private final OrderTrackingService orderTrackingService;
   private final EmailService emailService;
@@ -60,21 +77,29 @@ public class AdminController {
                          ProductVariantRepository productVariantRepository,
                          UserRepository userRepository,
                          PaymentRepository paymentRepository,
+                         OrderItemRepository orderItemRepository,
+                         StockMovementRepository stockMovementRepository,
+                         OrderNoteRepository orderNoteRepository,
                          AdminCouponService adminCouponService,
                          OrderTrackingService orderTrackingService,
                          EmailService emailService,
                          AdminOrderService adminOrderService,
-                         BannerService bannerService) {
+                         BannerService bannerService,
+                         SecurityUtils securityUtils) {
     this.productService = productService;
     this.orderRepository = orderRepository;
     this.productVariantRepository = productVariantRepository;
     this.userRepository = userRepository;
     this.paymentRepository = paymentRepository;
+    this.orderItemRepository = orderItemRepository;
+    this.stockMovementRepository = stockMovementRepository;
+    this.orderNoteRepository = orderNoteRepository;
     this.adminCouponService = adminCouponService;
     this.orderTrackingService = orderTrackingService;
     this.emailService = emailService;
     this.adminOrderService = adminOrderService;
     this.bannerService = bannerService;
+    this.securityUtils = securityUtils;
   }
 
   @PostMapping("/products")
@@ -138,6 +163,40 @@ public class AdminController {
     return ResponseEntity.ok(adminOrderService.getOrderDetail(id));
   }
 
+  @GetMapping("/orders/{id}/notes")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<List<OrderNoteResponse>> getOrderNotes(@PathVariable Long id) {
+    List<OrderNoteResponse> notes = orderNoteRepository.findByOrderIdOrderByCreatedAtDesc(id)
+        .stream()
+        .map(note -> new OrderNoteResponse(
+            note.getId(),
+            note.getNote(),
+            note.getCreatedBy(),
+            note.getCreatedAt()
+        ))
+        .collect(Collectors.toList());
+    return ResponseEntity.ok(notes);
+  }
+
+  @PostMapping("/orders/{id}/notes")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<OrderNoteResponse> addOrderNote(@PathVariable Long id,
+                                                        @Valid @RequestBody OrderNoteRequest request) {
+    Order order = orderRepository.findById(id)
+        .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+    OrderNote note = new OrderNote();
+    note.setOrder(order);
+    note.setNote(request.getNote());
+    note.setCreatedBy(securityUtils.getCurrentUser().getEmail());
+    OrderNote saved = orderNoteRepository.save(note);
+    return ResponseEntity.ok(new OrderNoteResponse(
+        saved.getId(),
+        saved.getNote(),
+        saved.getCreatedBy(),
+        saved.getCreatedAt()
+    ));
+  }
+
   @PutMapping("/orders/update-status")
   public ResponseEntity<Void> updateOrderStatus(@Valid @RequestBody UpdateOrderStatusRequest request) {
     Order order = orderRepository.findById(request.getOrderId())
@@ -149,6 +208,18 @@ public class AdminController {
     if (status == OrderStatus.SHIPPED) {
       emailService.sendOrderShipped(order);
     }
+    return ResponseEntity.ok().build();
+  }
+
+  @PatchMapping("/orders/{orderId}/items/{itemId}/pack")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<Void> updateOrderItemPacked(@PathVariable Long orderId,
+                                                    @PathVariable Long itemId,
+                                                    @Valid @RequestBody UpdateOrderItemPackRequest request) {
+    OrderItem item = orderItemRepository.findByIdAndOrderId(itemId, orderId)
+        .orElseThrow(() -> new IllegalArgumentException("Order item not found"));
+    item.setPacked(request.getPacked());
+    orderItemRepository.save(item);
     return ResponseEntity.ok().build();
   }
 
@@ -177,6 +248,7 @@ public class AdminController {
     ProductVariant variant = productVariantRepository.findById(request.getProductVariantId())
         .orElseThrow(() -> new IllegalArgumentException("Variant not found"));
 
+    int previousStock = variant.getStock();
     if (request.getNewStock() != null) {
       variant.setStock(Math.max(0, request.getNewStock()));
     } else if (request.getDelta() != null) {
@@ -184,7 +256,42 @@ public class AdminController {
     }
 
     productVariantRepository.save(variant);
+    int newStock = variant.getStock();
+    if (previousStock != newStock) {
+      StockMovement movement = new StockMovement();
+      movement.setProductVariant(variant);
+      movement.setPreviousStock(previousStock);
+      movement.setNewStock(newStock);
+      movement.setDelta(newStock - previousStock);
+      movement.setReason("ADMIN_ADJUSTMENT");
+      stockMovementRepository.save(movement);
+    }
     return ResponseEntity.ok().build();
+  }
+
+  @GetMapping("/inventory/history")
+  public ResponseEntity<List<StockMovementResponse>> getInventoryHistory(
+      @RequestParam(required = false) Long productVariantId,
+      @RequestParam(defaultValue = "50") int limit) {
+    List<StockMovementResponse> items = stockMovementRepository
+        .findRecent(productVariantId, PageRequest.of(0, Math.max(1, limit)))
+        .stream()
+        .map(movement -> new StockMovementResponse(
+            movement.getId(),
+            movement.getProductVariant().getProduct().getId(),
+            movement.getProductVariant().getProduct().getName(),
+            movement.getProductVariant().getId(),
+            movement.getProductVariant().getColor(),
+            movement.getProductVariant().getSize(),
+            movement.getProductVariant().getSku(),
+            movement.getDelta(),
+            movement.getPreviousStock(),
+            movement.getNewStock(),
+            movement.getReason(),
+            movement.getCreatedAt()
+        ))
+        .collect(Collectors.toList());
+    return ResponseEntity.ok(items);
   }
 
   @GetMapping("/dashboard/stats")
@@ -253,6 +360,39 @@ public class AdminController {
     return ResponseEntity.ok(bannerService.getAll());
   }
 
+  @GetMapping("/reports/sales/export")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<byte[]> exportSalesCsv() {
+    List<Order> orders = orderRepository.findAll(Sort.by("createdAt").descending());
+    Map<Long, Payment> payments = paymentRepository.findByOrderIdIn(
+            orders.stream().map(Order::getId).collect(Collectors.toList()))
+        .stream()
+        .collect(Collectors.toMap(payment -> payment.getOrder().getId(), payment -> payment));
+
+    StringBuilder csv = new StringBuilder();
+    csv.append("order_id,created_at,customer,email,total,status,payment_method,payment_date\n");
+    for (Order order : orders) {
+      Payment payment = payments.get(order.getId());
+      String customerName = order.getUser().getFirstName() + " " + order.getUser().getLastName();
+      String paymentMethod = payment == null ? "" : payment.getPaymentMethod();
+      String paymentDate = payment == null ? "" : payment.getCreatedAt().toString();
+      csv.append(order.getId()).append(",");
+      csv.append(csvEscape(order.getCreatedAt().toString())).append(",");
+      csv.append(csvEscape(customerName)).append(",");
+      csv.append(csvEscape(order.getUser().getEmail())).append(",");
+      csv.append(order.getTotalAmount()).append(",");
+      csv.append(csvEscape(order.getStatus().name())).append(",");
+      csv.append(csvEscape(paymentMethod)).append(",");
+      csv.append(csvEscape(paymentDate)).append("\n");
+    }
+
+    byte[] bytes = csv.toString().getBytes(StandardCharsets.UTF_8);
+    HttpHeaders headers = new HttpHeaders();
+    headers.add(HttpHeaders.CONTENT_TYPE, "text/csv; charset=utf-8");
+    headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"sales-report.csv\"");
+    return ResponseEntity.ok().headers(headers).body(bytes);
+  }
+
   @PostMapping("/banners")
   public ResponseEntity<BannerResponse> createBanner(@Valid @RequestBody BannerRequest request) {
     return ResponseEntity.ok(bannerService.create(request));
@@ -296,5 +436,11 @@ public class AdminController {
 
   private DashboardStatsResponse.ChartPoint toChartPoint(ChartPointProjection projection) {
     return new DashboardStatsResponse.ChartPoint(projection.getLabel(), projection.getValue());
+  }
+
+  private String csvEscape(String value) {
+    if (value == null) return "";
+    String escaped = value.replace("\"", "\"\"");
+    return "\"" + escaped + "\"";
   }
 }

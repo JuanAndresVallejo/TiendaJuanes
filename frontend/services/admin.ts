@@ -58,15 +58,55 @@ export async function updateInventory(payload: { productVariantId: number; newSt
   if (!res.ok) throw new Error("No se pudo actualizar inventario");
 }
 
+export async function getInventoryHistory(params?: { productVariantId?: number; limit?: number }) {
+  const query = new URLSearchParams();
+  if (params?.productVariantId) query.set("productVariantId", String(params.productVariantId));
+  if (params?.limit) query.set("limit", String(params.limit));
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  const res = await fetch(apiUrl(`/admin/inventory/history${suffix}`), { headers: authHeaders() });
+  if (!res.ok) throw new Error("No se pudo cargar historial");
+  return res.json();
+}
+
 export async function getOrders() {
   const res = await fetch(apiUrl("/admin/orders"), { headers: authHeaders() });
   if (!res.ok) throw new Error("No se pudieron cargar pedidos");
   return res.json();
 }
 
+export async function downloadSalesReport() {
+  const res = await fetch(apiUrl("/admin/reports/sales/export"), { headers: authHeaders() });
+  if (!res.ok) throw new Error("No se pudo exportar el reporte");
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "sales-report.csv";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export async function getOrderDetail(orderId: number) {
   const res = await fetch(apiUrl(`/admin/orders/${orderId}`), { headers: authHeaders() });
   if (!res.ok) throw new Error("No se pudo cargar el pedido");
+  return res.json();
+}
+
+export async function getOrderNotes(orderId: number) {
+  const res = await fetch(apiUrl(`/admin/orders/${orderId}/notes`), { headers: authHeaders() });
+  if (!res.ok) throw new Error("No se pudieron cargar notas");
+  return res.json();
+}
+
+export async function addOrderNote(orderId: number, note: string) {
+  const res = await fetch(apiUrl(`/admin/orders/${orderId}/notes`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ note })
+  });
+  if (!res.ok) throw new Error("No se pudo guardar la nota");
   return res.json();
 }
 
@@ -77,6 +117,15 @@ export async function updateOrderStatus(orderId: number, status: string) {
     body: JSON.stringify({ orderId, status })
   });
   if (!res.ok) throw new Error("No se pudo actualizar el estado");
+}
+
+export async function updateOrderItemPacked(orderId: number, itemId: number, packed: boolean) {
+  const res = await fetch(apiUrl(`/admin/orders/${orderId}/items/${itemId}/pack`), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ packed })
+  });
+  if (!res.ok) throw new Error("No se pudo actualizar el item");
 }
 
 export async function getDashboardStats() {
