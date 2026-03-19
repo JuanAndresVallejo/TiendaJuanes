@@ -34,6 +34,16 @@ public class EmailService {
         "<p>Tu pedido <strong>" + order.getId() + "</strong> fue enviado.</p>");
   }
 
+  public void sendPasswordReset(String to, String resetUrl) {
+    send(
+        to,
+        "Recupera tu contraseña",
+        "<p>Recibimos una solicitud para restablecer tu contraseña.</p>"
+            + "<p><a href=\"" + resetUrl + "\">Haz clic aquí para crear una nueva contraseña</a></p>"
+            + "<p>Si no solicitaste este cambio, ignora este correo.</p>"
+    );
+  }
+
   private void send(String to, String subject, String html) {
     try {
       MimeMessage message = mailSender.createMimeMessage();

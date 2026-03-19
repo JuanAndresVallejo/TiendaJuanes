@@ -1,13 +1,20 @@
 package com.juanesstore.services;
 
 import com.juanesstore.dto.AuthResponse;
+import com.juanesstore.dto.ForgotPasswordRequest;
 import com.juanesstore.dto.LoginRequest;
 import com.juanesstore.dto.RegisterRequest;
+import com.juanesstore.dto.ResetPasswordRequest;
 import com.juanesstore.models.Address;
+import com.juanesstore.models.PasswordResetToken;
 import com.juanesstore.models.Role;
 import com.juanesstore.models.User;
 import com.juanesstore.repositories.AddressRepository;
+import com.juanesstore.repositories.PasswordResetTokenRepository;
 import com.juanesstore.repositories.UserRepository;
+import java.time.Instant;
+import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import com.juanesstore.security.JwtUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,20 +28,29 @@ public class AuthService {
   private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
   private final UserRepository userRepository;
   private final AddressRepository addressRepository;
+  private final PasswordResetTokenRepository passwordResetTokenRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtUtils jwtUtils;
   private final AuthenticationManager authenticationManager;
+  private final EmailService emailService;
+  private final String frontendUrl;
 
   public AuthService(UserRepository userRepository,
                      AddressRepository addressRepository,
+                     PasswordResetTokenRepository passwordResetTokenRepository,
                      PasswordEncoder passwordEncoder,
                      JwtUtils jwtUtils,
-                     AuthenticationManager authenticationManager) {
+                     AuthenticationManager authenticationManager,
+                     EmailService emailService,
+                     @Value("${app.frontend.url:http://localhost:8088}") String frontendUrl) {
     this.userRepository = userRepository;
     this.addressRepository = addressRepository;
+    this.passwordResetTokenRepository = passwordResetTokenRepository;
     this.passwordEncoder = passwordEncoder;
     this.jwtUtils = jwtUtils;
     this.authenticationManager = authenticationManager;
+    this.emailService = emailService;
+    this.frontendUrl = frontendUrl;
   }
 
   public AuthResponse register(RegisterRequest request) {
@@ -78,5 +94,36 @@ public class AuthService {
     String token = jwtUtils.generateToken(user.getEmail(), user.getRole().name());
     String fullName = user.getFirstName() + " " + user.getLastName();
     return new AuthResponse(token, fullName, user.getEmail(), user.getRole().name());
+  }
+
+  public void forgotPassword(ForgotPasswordRequest request) {
+    userRepository.findByEmail(request.getEmail().trim().toLowerCase())
+        .ifPresent(user -> {
+          PasswordResetToken token = new PasswordResetToken();
+          token.setUser(user);
+          token.setToken(UUID.randomUUID().toString().replace("-", ""));
+          token.setExpiresAt(Instant.now().plusSeconds(60 * 30));
+          token.setUsed(false);
+          PasswordResetToken saved = passwordResetTokenRepository.save(token);
+
+          String resetUrl = frontendUrl + "/recuperar-password?token=" + saved.getToken();
+          emailService.sendPasswordReset(user.getEmail(), resetUrl);
+        });
+  }
+
+  public void resetPassword(ResetPasswordRequest request) {
+    if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+      throw new IllegalArgumentException("Las contraseñas no coinciden");
+    }
+    PasswordResetToken token = passwordResetTokenRepository.findByTokenAndUsedFalse(request.getToken())
+        .orElseThrow(() -> new IllegalArgumentException("El enlace de recuperación no es válido"));
+    if (token.getExpiresAt().isBefore(Instant.now())) {
+      throw new IllegalArgumentException("El enlace de recuperación expiró");
+    }
+    User user = token.getUser();
+    user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+    userRepository.save(user);
+    token.setUsed(true);
+    passwordResetTokenRepository.save(token);
   }
 }

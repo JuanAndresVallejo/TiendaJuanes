@@ -2,6 +2,20 @@ import { getToken } from "./auth";
 import { apiUrl } from "./api";
 import type { Product } from "./products";
 
+async function parseError(res: Response, fallback: string) {
+  if (res.status === 401 || res.status === 403) {
+    throw new Error("Tu sesión de administrador expiró o no tienes permisos");
+  }
+  let backendMessage: string | null = null;
+  try {
+    const data = await res.json();
+    if (typeof data?.message === "string") backendMessage = data.message;
+  } catch {
+    // ignore
+  }
+  throw new Error(backendMessage || fallback);
+}
+
 function authHeaders() {
   const headers: Record<string, string> = {};
   const token = getToken();
@@ -11,7 +25,7 @@ function authHeaders() {
 
 export async function getAdminProducts(): Promise<Product[]> {
   const res = await fetch(apiUrl("/admin/products"), { headers: authHeaders() });
-  if (!res.ok) throw new Error("No se pudieron cargar los productos");
+  if (!res.ok) await parseError(res, "No se pudieron cargar los productos");
   return res.json();
 }
 
@@ -20,7 +34,7 @@ export async function deleteProduct(id: number) {
     method: "DELETE",
     headers: authHeaders()
   });
-  if (!res.ok) throw new Error("No se pudo eliminar el producto");
+  if (!res.ok) await parseError(res, "No se pudo eliminar el producto");
 }
 
 export async function createProduct(payload: any) {
@@ -29,7 +43,7 @@ export async function createProduct(payload: any) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error("No se pudo crear el producto");
+  if (!res.ok) await parseError(res, "No se pudo crear el producto");
   return res.json();
 }
 
@@ -39,13 +53,13 @@ export async function updateProduct(id: number, payload: any) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error("No se pudo actualizar el producto");
+  if (!res.ok) await parseError(res, "No se pudo actualizar el producto");
   return res.json();
 }
 
 export async function getInventory() {
   const res = await fetch(apiUrl("/admin/inventory"), { headers: authHeaders() });
-  if (!res.ok) throw new Error("No se pudo cargar inventario");
+  if (!res.ok) await parseError(res, "No se pudo cargar inventario");
   return res.json();
 }
 
@@ -55,7 +69,7 @@ export async function updateInventory(payload: { productVariantId: number; newSt
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error("No se pudo actualizar inventario");
+  if (!res.ok) await parseError(res, "No se pudo actualizar inventario");
 }
 
 export async function getInventoryHistory(params?: { productVariantId?: number; limit?: number }) {
@@ -64,19 +78,19 @@ export async function getInventoryHistory(params?: { productVariantId?: number; 
   if (params?.limit) query.set("limit", String(params.limit));
   const suffix = query.toString() ? `?${query.toString()}` : "";
   const res = await fetch(apiUrl(`/admin/inventory/history${suffix}`), { headers: authHeaders() });
-  if (!res.ok) throw new Error("No se pudo cargar historial");
+  if (!res.ok) await parseError(res, "No se pudo cargar historial");
   return res.json();
 }
 
 export async function getOrders() {
   const res = await fetch(apiUrl("/admin/orders"), { headers: authHeaders() });
-  if (!res.ok) throw new Error("No se pudieron cargar pedidos");
+  if (!res.ok) await parseError(res, "No se pudieron cargar pedidos");
   return res.json();
 }
 
 export async function downloadSalesReport() {
   const res = await fetch(apiUrl("/admin/reports/sales/export"), { headers: authHeaders() });
-  if (!res.ok) throw new Error("No se pudo exportar el reporte");
+  if (!res.ok) await parseError(res, "No se pudo exportar el reporte");
   const blob = await res.blob();
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -90,13 +104,13 @@ export async function downloadSalesReport() {
 
 export async function getOrderDetail(orderId: number) {
   const res = await fetch(apiUrl(`/admin/orders/${orderId}`), { headers: authHeaders() });
-  if (!res.ok) throw new Error("No se pudo cargar el pedido");
+  if (!res.ok) await parseError(res, "No se pudo cargar el pedido");
   return res.json();
 }
 
 export async function getOrderNotes(orderId: number) {
   const res = await fetch(apiUrl(`/admin/orders/${orderId}/notes`), { headers: authHeaders() });
-  if (!res.ok) throw new Error("No se pudieron cargar notas");
+  if (!res.ok) await parseError(res, "No se pudieron cargar notas");
   return res.json();
 }
 
@@ -106,7 +120,7 @@ export async function addOrderNote(orderId: number, note: string) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ note })
   });
-  if (!res.ok) throw new Error("No se pudo guardar la nota");
+  if (!res.ok) await parseError(res, "No se pudo guardar la nota");
   return res.json();
 }
 
@@ -116,7 +130,7 @@ export async function updateOrderStatus(orderId: number, status: string) {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ orderId, status })
   });
-  if (!res.ok) throw new Error("No se pudo actualizar el estado");
+  if (!res.ok) await parseError(res, "No se pudo actualizar el estado");
 }
 
 export async function updateOrderItemPacked(orderId: number, itemId: number, packed: boolean) {
@@ -125,24 +139,30 @@ export async function updateOrderItemPacked(orderId: number, itemId: number, pac
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ packed })
   });
-  if (!res.ok) throw new Error("No se pudo actualizar el item");
+  if (!res.ok) await parseError(res, "No se pudo actualizar el item");
 }
 
 export async function getDashboardStats() {
   const res = await fetch(apiUrl("/admin/dashboard/stats"), { headers: authHeaders() });
-  if (!res.ok) throw new Error("No se pudieron cargar metricas");
+  if (!res.ok) await parseError(res, "No se pudieron cargar metricas");
   return res.json();
 }
 
 export async function getAdminUsers() {
   const res = await fetch(apiUrl("/admin/users"), { headers: authHeaders() });
-  if (!res.ok) throw new Error("No se pudieron cargar usuarios");
+  if (!res.ok) await parseError(res, "No se pudieron cargar usuarios");
+  return res.json();
+}
+
+export async function getAdminUserDetail(id: number) {
+  const res = await fetch(apiUrl(`/admin/users/${id}`), { headers: authHeaders() });
+  if (!res.ok) await parseError(res, "No se pudo cargar el detalle del usuario");
   return res.json();
 }
 
 export async function getBanners() {
   const res = await fetch(apiUrl("/admin/banners"), { headers: authHeaders() });
-  if (!res.ok) throw new Error("No se pudieron cargar banners");
+  if (!res.ok) await parseError(res, "No se pudieron cargar banners");
   return res.json();
 }
 
@@ -157,7 +177,7 @@ export async function createBanner(payload: {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error("No se pudo crear el banner");
+  if (!res.ok) await parseError(res, "No se pudo crear el banner");
   return res.json();
 }
 
@@ -172,7 +192,7 @@ export async function updateBanner(id: number, payload: {
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error("No se pudo actualizar el banner");
+  if (!res.ok) await parseError(res, "No se pudo actualizar el banner");
   return res.json();
 }
 
@@ -181,5 +201,5 @@ export async function deleteBanner(id: number) {
     method: "DELETE",
     headers: authHeaders()
   });
-  if (!res.ok) throw new Error("No se pudo eliminar el banner");
+  if (!res.ok) await parseError(res, "No se pudo eliminar el banner");
 }

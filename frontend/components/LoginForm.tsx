@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { login } from "../services/auth";
 import { useToast } from "./ToastProvider";
+import Link from "next/link";
+import { isValidEmail } from "../services/validation";
 
 export default function LoginForm({ redirect }: { redirect?: string }) {
   const [email, setEmail] = useState("");
@@ -10,7 +12,16 @@ export default function LoginForm({ redirect }: { redirect?: string }) {
   const [loading, setLoading] = useState(false);
   const { show } = useToast();
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    if (!isValidEmail(email)) {
+      show("Ingresa un correo válido", "error");
+      return;
+    }
+    if (!password.trim()) {
+      show("Ingresa tu contraseña", "error");
+      return;
+    }
     try {
       setLoading(true);
       await login(email, password);
@@ -25,7 +36,7 @@ export default function LoginForm({ redirect }: { redirect?: string }) {
   };
 
   return (
-    <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+    <form className="space-y-4" onSubmit={handleSubmit}>
       <div>
         <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Correo</label>
         <input
@@ -47,13 +58,17 @@ export default function LoginForm({ redirect }: { redirect?: string }) {
         />
       </div>
       <button
-        type="button"
-        onClick={handleSubmit}
+        type="submit"
         disabled={loading}
         className="w-full rounded-full bg-terracotta text-cream py-3 uppercase tracking-[0.2em]"
       >
         {loading ? "Ingresando..." : "Iniciar sesión"}
       </button>
+      <div className="text-right">
+        <Link href="/recuperar-password" className="text-xs uppercase tracking-[0.2em] text-ink/70">
+          Recuperar contraseña
+        </Link>
+      </div>
     </form>
   );
 }

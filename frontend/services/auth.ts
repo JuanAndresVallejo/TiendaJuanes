@@ -11,6 +11,12 @@ const TOKEN_KEY = "tj_token";
 const ROLE_KEY = "tj_role";
 const FULL_NAME_KEY = "tj_full_name";
 
+function notifyAuthChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("auth-updated"));
+  }
+}
+
 export function saveToken(token: string) {
   if (typeof window !== "undefined") {
     localStorage.setItem(TOKEN_KEY, token);
@@ -26,6 +32,7 @@ export function saveRole(role: string) {
 export function saveFullName(fullName: string) {
   if (typeof window !== "undefined") {
     localStorage.setItem(FULL_NAME_KEY, fullName);
+    notifyAuthChanged();
   }
 }
 
@@ -49,6 +56,7 @@ export function logout() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ROLE_KEY);
     localStorage.removeItem(FULL_NAME_KEY);
+    notifyAuthChanged();
   }
 }
 
@@ -112,4 +120,32 @@ export async function register(payload: {
   saveRole(data.role);
   saveFullName(data.fullName);
   return data;
+}
+
+export async function forgotPassword(email: string) {
+  const res = await fetch(apiUrl("/auth/forgot-password"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+  if (!res.ok) {
+    const message = await parseErrorMessage(res);
+    throw new Error(message || "No se pudo procesar la solicitud");
+  }
+}
+
+export async function resetPassword(payload: {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}) {
+  const res = await fetch(apiUrl("/auth/reset-password"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const message = await parseErrorMessage(res);
+    throw new Error(message || "No se pudo actualizar la contraseña");
+  }
 }

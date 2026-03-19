@@ -1,5 +1,7 @@
 package com.juanesstore.dto;
 
+import jakarta.validation.constraints.Size;
+
 public class CreateOrderRequest {
   private Long addressId;
 
@@ -11,6 +13,7 @@ public class CreateOrderRequest {
 
   private Boolean express;
 
+  @Size(max = 300)
   private String notes;
 
   private String couponCode;

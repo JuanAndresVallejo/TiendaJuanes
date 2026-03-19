@@ -6,14 +6,14 @@ public class AdminUserResponse {
   private Long id;
   private String fullName;
   private String email;
-  private String role;
+  private Long orderCount;
   private Instant createdAt;
 
-  public AdminUserResponse(Long id, String fullName, String email, String role, Instant createdAt) {
+  public AdminUserResponse(Long id, String fullName, String email, Long orderCount, Instant createdAt) {
     this.id = id;
     this.fullName = fullName;
     this.email = email;
-    this.role = role;
+    this.orderCount = orderCount;
     this.createdAt = createdAt;
   }
 
@@ -29,8 +29,8 @@ public class AdminUserResponse {
     return email;
   }
 
-  public String getRole() {
-    return role;
+  public Long getOrderCount() {
+    return orderCount;
   }
 
   public Instant getCreatedAt() {

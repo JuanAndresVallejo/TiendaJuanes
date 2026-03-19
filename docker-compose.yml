@@ -27,6 +27,8 @@ services:
       MAIL_USERNAME: ""
       MAIL_PASSWORD: ""
       CLOUDINARY_URL: ""
+      FRONTEND_URL: http://localhost:8088
+      N8N_WEBHOOK_URL: ""
     depends_on:
       - postgres
     ports:

@@ -4,7 +4,7 @@
 - [x] Vista `/admin/orders/[id]` creada y navegable desde listado
 - [x] Muestra info del pedido (cliente, correo, telefono, direccion, metodo, estado, fecha, total)
 - [x] Checklist visual con checkbox (estado local)
-- [x] Boton "Pedido empacado" cambia `PACKING -> SHIPPED`
+- [x] Boton "Pedido empacado" cambia `PENDING/PAID/PACKING -> SHIPPED` (con checklist completo)
 - [x] Endpoint `GET /api/admin/orders/{id}` con `OrderDetailDTO`
 - [x] No se devuelven entidades JPA directamente
 
@@ -98,3 +98,24 @@
 - [x] Historial de inventario en admin
 - [x] Notas internas en detalle de pedido
 - [x] Export CSV desde admin pedidos
+
+## 12) Ajustes fase 2026-03-18
+- [x] Guard de admin layout para evitar requests prematuros con 403
+- [x] Alertas migradas a pop modal con cierre manual
+- [x] Redes solo en landing (boton `Redes` + boton fijo `Soporte`)
+- [x] Admin no ve botones de compra en cards/detalle
+- [x] No logeado al intentar comprar recibe mensaje de iniciar sesion
+- [x] Notas checkout/admin limitadas a 300 caracteres (frontend + backend)
+- [x] Imagenes de detalle de producto expandibles
+- [x] Botones `Atras` en vistas clave (checkout, detalle producto, detalle pedido admin/cliente)
+- [x] Favoritos y nombre de navbar se actualizan sin recargar
+- [x] Recuperacion de contraseña (`forgot-password` / `reset-password` + UI)
+- [x] Modal de agregar al carrito en catalogo incluye cantidad + cierre automatico
+- [x] Detalle de producto para visitante prioriza informacion y bloquea compra
+- [x] Validaciones de perfil/direcciones alineadas con registro
+- [x] Migracion `V27` para catalogo con imagenes reales de producto
+- [x] Accesibilidad base: foco visible global y cierre por `Esc` en dialogos principales
+- [x] Recuperar/Login/Registro con envio por `Enter` y validaciones consistentes
+- [x] Script de regresion basica `scripts/qa-smoke.sh`
+- [x] Vistas admin restantes con mejoras de accesibilidad (tablas semanticas, aria labels y submit con Enter)
+- [x] Vistas cliente clave con mejoras de accesibilidad (`/productos`, `/checkout`, `/mis-pedidos`, `/mi-perfil`)

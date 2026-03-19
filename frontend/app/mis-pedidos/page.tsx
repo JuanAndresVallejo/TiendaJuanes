@@ -14,9 +14,9 @@ export default function MyOrdersPage() {
   return (
     <section className="max-w-5xl mx-auto px-6 py-12">
       <h1 className="font-display text-4xl">Mis pedidos</h1>
-      <div className="mt-6 space-y-4">
+      <ul className="mt-6 space-y-4" aria-label="Listado de pedidos">
         {orders.map((order) => (
-          <div key={order.id} className="bg-white/70 border border-sand rounded-2xl p-4 flex items-center justify-between">
+          <li key={order.id} className="bg-white/70 border border-sand rounded-2xl p-4 flex items-center justify-between">
             <div>
               <p className="text-sm text-ink/70">Pedido #{order.id}</p>
               <p className="text-sm">
@@ -27,11 +27,11 @@ export default function MyOrdersPage() {
             </div>
             <div className="text-right">
               <p className="font-semibold">${order.totalAmount.toLocaleString("es-CO")}</p>
-              <Link href={`/mis-pedidos/${order.id}`} className="text-terracotta text-sm">Ver detalle</Link>
+              <Link href={`/mis-pedidos/${order.id}`} className="text-terracotta text-sm" aria-label={`Ver detalle del pedido ${order.id}`}>Ver detalle</Link>
             </div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

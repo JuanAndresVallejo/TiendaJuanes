@@ -32,6 +32,7 @@ export default function ProductsClient() {
   const hasFilters = useMemo(() => Object.values(filters).some((v) => v !== ""), [filters]);
 
   useEffect(() => {
+    if (query === searchText) return;
     setSearchText(query);
     setDebouncedSearch(query);
   }, [query]);
@@ -39,50 +40,54 @@ export default function ProductsClient() {
   useEffect(() => {
     const handle = setTimeout(() => {
       setDebouncedSearch(searchText);
-      if (searchText.trim()) {
-        router.replace(`/productos?q=${encodeURIComponent(searchText.trim())}`);
-      } else {
-        router.replace("/productos");
-      }
     }, 400);
     return () => clearTimeout(handle);
-  }, [searchText, router]);
+  }, [searchText]);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const data: ProductPage = await getProductsAdvanced({
-        search: debouncedSearch.trim() || undefined,
-        category: filters.category.trim() || undefined,
-        brand: filters.brand.trim() || undefined,
-        size: filters.size.trim() || undefined,
-        minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
-        maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined,
-        page,
-        sizeParam: pageSize,
-        sort,
-        dir
-      });
-      setProducts(data.items);
-      setTotalPages(data.totalPages || 1);
-      setTotalElements(data.totalElements || 0);
-    } catch {
-      setProducts([]);
-      setTotalPages(1);
-      setTotalElements(0);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    const next = debouncedSearch.trim();
+    if (next) {
+      router.replace(`/productos?q=${encodeURIComponent(next)}`);
+      return;
     }
-  };
+    if (query) {
+      router.replace("/productos");
+    }
+  }, [debouncedSearch, query, router]);
 
   useEffect(() => {
     setPage(0);
-    load();
-  }, [debouncedSearch, hasFilters, filters, sort, dir]);
+  }, [debouncedSearch, hasFilters, filters.category, filters.brand, filters.size, filters.minPrice, filters.maxPrice, sort, dir]);
 
   useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data: ProductPage = await getProductsAdvanced({
+          search: debouncedSearch.trim() || undefined,
+          category: filters.category.trim() || undefined,
+          brand: filters.brand.trim() || undefined,
+          size: filters.size.trim() || undefined,
+          minPrice: filters.minPrice ? Number(filters.minPrice) : undefined,
+          maxPrice: filters.maxPrice ? Number(filters.maxPrice) : undefined,
+          page,
+          sizeParam: pageSize,
+          sort,
+          dir
+        });
+        setProducts(data.items);
+        setTotalPages(data.totalPages || 1);
+        setTotalElements(data.totalElements || 0);
+      } catch {
+        setProducts([]);
+        setTotalPages(1);
+        setTotalElements(0);
+      } finally {
+        setLoading(false);
+      }
+    };
     load();
-  }, [page]);
+  }, [debouncedSearch, filters.category, filters.brand, filters.size, filters.minPrice, filters.maxPrice, page, sort, dir]);
 
   const currentPage = Math.min(page + 1, totalPages);
   const pagedProducts = products;
@@ -102,11 +107,14 @@ export default function ProductsClient() {
       </div>
 
       <div className="mt-6">
+        <label htmlFor="catalog-search" className="sr-only">Buscar productos</label>
         <input
+          id="catalog-search"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
           placeholder="Buscar productos en tiempo real"
           className="w-full md:max-w-md rounded-full border border-sand bg-white/80 px-5 py-3 text-sm"
+          aria-label="Buscar productos"
         />
       </div>
 
@@ -118,6 +126,7 @@ export default function ProductsClient() {
               value={filters.category}
               onChange={(e) => setFilters({ ...filters, category: e.target.value })}
               className="w-full rounded-xl border border-sand bg-white/80 px-3 py-2"
+              aria-label="Filtrar por categoría"
             >
               {categories.map((category) => (
                 <option key={category} value={category}>
@@ -129,6 +138,7 @@ export default function ProductsClient() {
               value={filters.brand}
               onChange={(e) => setFilters({ ...filters, brand: e.target.value })}
               className="w-full rounded-xl border border-sand bg-white/80 px-3 py-2"
+              aria-label="Filtrar por marca"
             >
               {brands.map((brand) => (
                 <option key={brand} value={brand}>
@@ -140,6 +150,7 @@ export default function ProductsClient() {
               value={filters.size}
               onChange={(e) => setFilters({ ...filters, size: e.target.value })}
               className="w-full rounded-xl border border-sand bg-white/80 px-3 py-2"
+              aria-label="Filtrar por talla"
             >
               {sizes.map((size) => (
                 <option key={size} value={size}>
@@ -152,12 +163,14 @@ export default function ProductsClient() {
               value={filters.minPrice}
               onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
               className="w-full rounded-xl border border-sand bg-white/80 px-3 py-2"
+              aria-label="Precio mínimo"
             />
             <input
               placeholder="Precio maximo"
               value={filters.maxPrice}
               onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
               className="w-full rounded-xl border border-sand bg-white/80 px-3 py-2"
+              aria-label="Precio máximo"
             />
             <button
               type="button"
@@ -185,6 +198,7 @@ export default function ProductsClient() {
                     value={sort}
                     onChange={(e) => setSort(e.target.value)}
                     className="rounded-xl border border-sand bg-white/80 px-3 py-2"
+                    aria-label="Ordenar catálogo por"
                   >
                     <option value="created_at">Nuevos</option>
                     <option value="name">Nombre</option>
@@ -195,6 +209,7 @@ export default function ProductsClient() {
                     value={dir}
                     onChange={(e) => setDir(e.target.value)}
                     className="rounded-xl border border-sand bg-white/80 px-3 py-2"
+                    aria-label="Dirección del orden"
                   >
                     <option value="desc">Desc</option>
                     <option value="asc">Asc</option>
@@ -209,6 +224,9 @@ export default function ProductsClient() {
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
+              <p className="sr-only" aria-live="polite">
+                Mostrando {pagedProducts.length} productos en la página {currentPage}.
+              </p>
               {totalPages > 1 && (
                 <div className="mt-8 flex items-center justify-between text-sm">
                   <button

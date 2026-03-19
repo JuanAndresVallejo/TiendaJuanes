@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getRole, getToken } from "../../services/auth";
 import { createOrder } from "../../services/orders";
 import { createPreference } from "../../services/payments";
@@ -8,6 +8,7 @@ import { addAddress, getAddresses, Address } from "../../services/addresses";
 import { getCart, CartItem } from "../../services/cart";
 import { useToast } from "../../components/ToastProvider";
 import { validateCoupon } from "../../services/coupons";
+import { FaUniversity, FaMoneyBillWave, FaBoxOpen } from "react-icons/fa";
 
 const departments: Record<string, string[]> = {
   Antioquia: ["Medellin", "Bello", "Sabaneta", "Itagui", "La Estrella", "Envigado"]
@@ -40,7 +41,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!token) return;
-    if (getRole() === "ADMIN") {
+    if (["ADMIN", "ROLE_ADMIN"].includes(getRole() || "")) {
       show("Los administradores no pueden realizar pedidos", "error");
       window.location.href = "/admin/dashboard";
       return;
@@ -56,7 +57,7 @@ export default function CheckoutPage() {
       .catch(() => setAddresses([]));
 
     getCart().then(setCartItems).catch(() => setCartItems([]));
-  }, [token]);
+  }, [token, show]);
 
   useEffect(() => {
     if (!cityOptions.includes(city)) {
@@ -89,7 +90,8 @@ export default function CheckoutPage() {
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const total = Math.max(0, subtotal + shippingCost - discount);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
     if (!token) {
       window.location.href = "/login?redirect=/checkout";
       return;
@@ -97,6 +99,9 @@ export default function CheckoutPage() {
 
     if (couponCode.trim() && !appliedCoupon) {
       show("Debes validar el cupón antes de continuar", "error");
+      return;
+    }
+    if (!window.confirm("¿Confirmas que deseas finalizar esta compra con los productos seleccionados?")) {
       return;
     }
 
@@ -159,15 +164,18 @@ export default function CheckoutPage() {
 
   return (
     <section className="max-w-4xl mx-auto px-6 py-12">
+      <a href="/carrito" className="text-xs uppercase tracking-[0.2em] text-ink/60">Atras</a>
       <h1 className="font-display text-4xl">Checkout</h1>
       <p className="text-ink/70 mt-3">Direccion de envio y opciones de entrega.</p>
 
-      <div className="mt-8 bg-white/70 border border-sand rounded-3xl p-6 space-y-6">
+      <form className="mt-8 bg-white/70 border border-sand rounded-3xl p-6 space-y-6" onSubmit={handleSubmit}>
         <div>
           <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Direccion guardada</label>
           <select
             className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
             value={selectedAddressId}
+            disabled={addresses.length === 0}
+            aria-label="Seleccionar dirección guardada"
             onChange={(e) => {
               setSelectedAddressId(e.target.value);
               setUseNewAddress(false);
@@ -179,7 +187,7 @@ export default function CheckoutPage() {
               }
             }}
           >
-            <option value="">Selecciona una direccion</option>
+            {addresses.length === 0 && <option value="">No tienes direcciones guardadas</option>}
             {addresses.map((addr) => (
               <option key={addr.id} value={addr.id}>
                 {addr.department} - {addr.city} | {addr.addressLine}
@@ -190,6 +198,7 @@ export default function CheckoutPage() {
             type="button"
             onClick={() => setUseNewAddress(true)}
             className="mt-3 text-sm text-terracotta"
+            aria-label="Usar una nueva dirección"
           >
             Usar nueva direccion
           </button>
@@ -203,6 +212,7 @@ export default function CheckoutPage() {
                 className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
+                aria-label="Departamento de envío"
               >
                 {Object.keys(departments).map((dept) => (
                   <option key={dept} value={dept}>{dept}</option>
@@ -215,6 +225,7 @@ export default function CheckoutPage() {
                 className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
+                aria-label="Ciudad de envío"
               >
                 {cityOptions.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -229,6 +240,7 @@ export default function CheckoutPage() {
                 className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
                 value={addressLine}
                 onChange={(e) => setAddressLine(e.target.value)}
+                aria-label="Dirección de envío"
               />
             </div>
           </div>
@@ -241,6 +253,7 @@ export default function CheckoutPage() {
             onChange={(e) => setExpress(e.target.checked)}
             disabled={!canUseExpress}
             className="mt-1"
+            aria-label="Activar envío express"
           />
           <div>
             <p className="font-semibold">Envio express</p>
@@ -262,13 +275,21 @@ export default function CheckoutPage() {
             <input
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  applyCoupon();
+                }
+              }}
               className="flex-1 rounded-xl border border-sand bg-white/80 px-4 py-3"
               placeholder="Ingresa tu cupón"
+              aria-label="Código de cupón"
             />
             <button
               type="button"
               onClick={applyCoupon}
               className="rounded-full border border-ink px-4"
+              aria-label="Aplicar cupón"
             >
               Aplicar
             </button>
@@ -280,15 +301,38 @@ export default function CheckoutPage() {
 
         <div className="grid gap-2">
           <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Método de pago</label>
-          <select
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
-            className="w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
-          >
-            <option value="MERCADOPAGO">PSE (MercadoPago)</option>
-            <option value="TRANSFERENCIA">Transferencia</option>
-            <option value="CONTRAENTREGA">Contraentrega</option>
-          </select>
+          <div className="grid gap-2 md:grid-cols-3" role="radiogroup" aria-label="Métodos de pago disponibles">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("MERCADOPAGO")}
+              className={`rounded-2xl border px-4 py-3 text-left ${paymentMethod === "MERCADOPAGO" ? "border-ink bg-ink text-cream" : "border-sand bg-white/80"}`}
+              role="radio"
+              aria-checked={paymentMethod === "MERCADOPAGO"}
+            >
+              <span className="flex items-center gap-2"><FaUniversity /> PSE</span>
+              <span className="mt-1 block text-xs opacity-80">MercadoPago</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("TRANSFERENCIA")}
+              className={`rounded-2xl border px-4 py-3 text-left ${paymentMethod === "TRANSFERENCIA" ? "border-ink bg-ink text-cream" : "border-sand bg-white/80"}`}
+              role="radio"
+              aria-checked={paymentMethod === "TRANSFERENCIA"}
+            >
+              <span className="flex items-center gap-2"><FaMoneyBillWave /> Transferencia</span>
+              <span className="mt-1 block text-xs opacity-80">Pago bancario</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("CONTRAENTREGA")}
+              className={`rounded-2xl border px-4 py-3 text-left ${paymentMethod === "CONTRAENTREGA" ? "border-ink bg-ink text-cream" : "border-sand bg-white/80"}`}
+              role="radio"
+              aria-checked={paymentMethod === "CONTRAENTREGA"}
+            >
+              <span className="flex items-center gap-2"><FaBoxOpen /> Contraentrega</span>
+              <span className="mt-1 block text-xs opacity-80">Pagas al recibir</span>
+            </button>
+          </div>
           {paymentMethod !== "MERCADOPAGO" && (
             <p className="text-xs text-ink/60">
               Te contactaremos para confirmar el pago y coordinar la entrega.
@@ -302,9 +346,12 @@ export default function CheckoutPage() {
             rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
+            maxLength={300}
             className="w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
             placeholder="Ej: Entregar en portería, timbre no funciona, etc."
+            aria-label="Notas u observaciones del pedido"
           />
+          <p className="text-xs text-ink/60 text-right">{notes.length}/300</p>
         </div>
 
         <div className="flex items-center justify-between text-sm">
@@ -325,14 +372,13 @@ export default function CheckoutPage() {
         </div>
 
         <button
-          type="button"
-          onClick={handleSubmit}
+          type="submit"
           disabled={loading}
           className="w-full rounded-full bg-terracotta text-cream py-3 uppercase tracking-[0.2em]"
         >
           {loading ? "Procesando..." : "Finalizar compra"}
         </button>
-      </div>
+      </form>
     </section>
   );
 }

@@ -3,8 +3,10 @@ package com.juanesstore.controllers;
 import com.juanesstore.dto.AdminOrderResponse;
 import com.juanesstore.dto.AdminCouponRequest;
 import com.juanesstore.dto.AdminCouponResponse;
+import com.juanesstore.dto.AdminUserDetailResponse;
 import com.juanesstore.dto.AdminUserResponse;
 import com.juanesstore.dto.AnalyticsResponse;
+import com.juanesstore.dto.AddressResponse;
 import com.juanesstore.dto.BannerRequest;
 import com.juanesstore.dto.BannerResponse;
 import com.juanesstore.dto.DashboardStatsResponse;
@@ -25,7 +27,9 @@ import com.juanesstore.models.OrderStatus;
 import com.juanesstore.models.Payment;
 import com.juanesstore.models.ProductVariant;
 import com.juanesstore.models.StockMovement;
+import com.juanesstore.models.User;
 import com.juanesstore.repositories.ChartPointProjection;
+import com.juanesstore.repositories.AddressRepository;
 import com.juanesstore.repositories.OrderItemRepository;
 import com.juanesstore.repositories.OrderNoteRepository;
 import com.juanesstore.repositories.OrderRepository;
@@ -39,6 +43,7 @@ import com.juanesstore.services.ProductService;
 import com.juanesstore.services.AdminCouponService;
 import com.juanesstore.services.EmailService;
 import com.juanesstore.services.OrderTrackingService;
+import com.juanesstore.services.AutomationWebhookService;
 import com.juanesstore.utils.SecurityUtils;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
@@ -63,12 +68,14 @@ public class AdminController {
   private final UserRepository userRepository;
   private final PaymentRepository paymentRepository;
   private final OrderItemRepository orderItemRepository;
+  private final AddressRepository addressRepository;
   private final StockMovementRepository stockMovementRepository;
   private final OrderNoteRepository orderNoteRepository;
   private final SecurityUtils securityUtils;
   private final AdminCouponService adminCouponService;
   private final OrderTrackingService orderTrackingService;
   private final EmailService emailService;
+  private final AutomationWebhookService automationWebhookService;
   private final AdminOrderService adminOrderService;
   private final BannerService bannerService;
 
@@ -78,11 +85,13 @@ public class AdminController {
                          UserRepository userRepository,
                          PaymentRepository paymentRepository,
                          OrderItemRepository orderItemRepository,
+                         AddressRepository addressRepository,
                          StockMovementRepository stockMovementRepository,
                          OrderNoteRepository orderNoteRepository,
                          AdminCouponService adminCouponService,
                          OrderTrackingService orderTrackingService,
                          EmailService emailService,
+                         AutomationWebhookService automationWebhookService,
                          AdminOrderService adminOrderService,
                          BannerService bannerService,
                          SecurityUtils securityUtils) {
@@ -92,11 +101,13 @@ public class AdminController {
     this.userRepository = userRepository;
     this.paymentRepository = paymentRepository;
     this.orderItemRepository = orderItemRepository;
+    this.addressRepository = addressRepository;
     this.stockMovementRepository = stockMovementRepository;
     this.orderNoteRepository = orderNoteRepository;
     this.adminCouponService = adminCouponService;
     this.orderTrackingService = orderTrackingService;
     this.emailService = emailService;
+    this.automationWebhookService = automationWebhookService;
     this.adminOrderService = adminOrderService;
     this.bannerService = bannerService;
     this.securityUtils = securityUtils;
@@ -205,6 +216,7 @@ public class AdminController {
     order.setStatus(status);
     orderRepository.save(order);
     orderTrackingService.recordStatus(order, status);
+    automationWebhookService.sendOrderStatusUpdated(order);
     if (status == OrderStatus.SHIPPED) {
       emailService.sendOrderShipped(order);
     }
@@ -327,15 +339,60 @@ public class AdminController {
   @GetMapping("/users")
   public ResponseEntity<List<AdminUserResponse>> listUsers() {
     List<AdminUserResponse> users = userRepository.findAll().stream()
+        .filter(user -> "CUSTOMER".equalsIgnoreCase(user.getRole().name()))
         .map(user -> new AdminUserResponse(
             user.getId(),
             user.getFirstName() + " " + user.getLastName(),
             user.getEmail(),
-            user.getRole().name(),
+            orderRepository.countByUserId(user.getId()),
             user.getCreatedAt()
         ))
         .collect(Collectors.toList());
     return ResponseEntity.ok(users);
+  }
+
+  @GetMapping("/users/{id}")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<AdminUserDetailResponse> getUserDetail(@PathVariable Long id) {
+    User user = userRepository.findById(id)
+        .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    if (!"CUSTOMER".equalsIgnoreCase(user.getRole().name())) {
+      throw new IllegalArgumentException("User not found");
+    }
+
+    List<AddressResponse> addresses = addressRepository.findByUserOrderByCreatedAtDesc(user).stream()
+        .map(address -> new AddressResponse(
+            address.getId(),
+            address.getDepartment(),
+            address.getCity(),
+            address.getAddressLine(),
+            address.getIsDefault()
+        ))
+        .collect(Collectors.toList());
+
+    List<AdminUserDetailResponse.OrderSummary> recentOrders = orderRepository.findByUserIdOrderByCreatedAtDesc(id)
+        .stream()
+        .limit(10)
+        .map(order -> new AdminUserDetailResponse.OrderSummary(
+            order.getId(),
+            order.getCreatedAt(),
+            order.getStatus().name(),
+            order.getTotalAmount()
+        ))
+        .collect(Collectors.toList());
+
+    AdminUserDetailResponse response = new AdminUserDetailResponse(
+        user.getId(),
+        user.getFirstName() + " " + user.getLastName(),
+        user.getEmail(),
+        user.getPhone(),
+        user.getDocumentId(),
+        user.getCreatedAt(),
+        orderRepository.countByUserId(id),
+        addresses,
+        recentOrders
+    );
+    return ResponseEntity.ok(response);
   }
 
   @PostMapping("/coupons")

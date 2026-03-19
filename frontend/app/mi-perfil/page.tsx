@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { getMyProfile, updateMyPassword, updateMyProfile, UserProfile } from "../../services/profile";
 import { addAddress, getAddresses, Address, deleteAddress, setDefaultAddress, updateAddress } from "../../services/addresses";
 import { useToast } from "../../components/ToastProvider";
+import { saveFullName } from "../../services/auth";
+import { addressRegex, documentRegex, lastNameRegex, nameRegex, phoneRegex } from "../../services/validation";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -34,7 +36,7 @@ export default function ProfilePage() {
 
   const departmentCities: Record<string, string[]> = {
     "Amazonas": ["Leticia"],
-    "Antioquia": ["Medellin", "Bello", "Sabaneta", "Itagui", "La Estrella"],
+    "Antioquia": ["Medellin", "Bello", "Sabaneta", "Itagui", "La Estrella", "Envigado", "Copacabana", "Rionegro", "La Ceja", "Marinilla"],
     "Arauca": ["Arauca"],
     "Atlántico": ["Barranquilla", "Soledad", "Malambo"],
     "Bolívar": ["Cartagena", "Magangue"],
@@ -102,26 +104,31 @@ export default function ProfilePage() {
   }, []);
 
   const saveProfile = async () => {
-    if (form.firstName.length > 20) {
-      show("El nombre no debe superar 20 letras", "error");
+    if (!nameRegex.test(form.firstName)) {
+      show("Nombre inválido: solo letras y espacios (2-20)", "error");
       return;
     }
-    if (form.lastName.length > 25) {
-      show("El apellido no debe superar 25 letras", "error");
+    if (!lastNameRegex.test(form.lastName)) {
+      show("Apellido inválido: solo letras y espacios (2-25)", "error");
       return;
     }
-    if (!/^\d{10}$/.test(form.phone)) {
+    if (!phoneRegex.test(form.phone)) {
       show("El celular debe tener 10 numeros", "error");
       return;
     }
-    if (!/^\d+$/.test(form.documentId)) {
-      show("El documento debe contener solo numeros", "error");
+    if (!documentRegex.test(form.documentId)) {
+      show("La cédula debe contener solo números (6-15)", "error");
+      return;
+    }
+    if (!addressRegex.test(form.addressLine)) {
+      show("Dirección inválida (usa letras, números y # . , -)", "error");
       return;
     }
     try {
       setSaving(true);
       const updated = await updateMyProfile(form);
       setProfile(updated);
+      saveFullName(updated.fullName);
       show("Perfil actualizado");
     } catch (error) {
       const message = error instanceof Error ? error.message : "No se pudo actualizar el perfil";
@@ -131,9 +138,18 @@ export default function ProfilePage() {
     }
   };
 
+  const saveProfileSubmit = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    await saveProfile();
+  };
+
   const savePassword = async () => {
     if (passwordForm.newPassword.length < 8) {
       show("La contraseña debe tener mínimo 8 caracteres", "error");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      show("La confirmación de contraseña no coincide", "error");
       return;
     }
     try {
@@ -149,9 +165,14 @@ export default function ProfilePage() {
     }
   };
 
+  const savePasswordSubmit = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    await savePassword();
+  };
+
   const handleAddAddress = async () => {
-    if (!newAddress.addressLine.trim()) {
-      show("La direccion es obligatoria", "error");
+    if (!addressRegex.test(newAddress.addressLine.trim())) {
+      show("La dirección debe tener entre 8 y 120 caracteres válidos", "error");
       return;
     }
     try {
@@ -171,6 +192,11 @@ export default function ProfilePage() {
     }
   };
 
+  const handleAddAddressSubmit = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    await handleAddAddress();
+  };
+
   const startEditAddress = (addr: Address) => {
     setEditingAddressId(addr.id);
     setEditAddress({
@@ -183,8 +209,8 @@ export default function ProfilePage() {
 
   const handleUpdateAddress = async () => {
     if (!editingAddressId) return;
-    if (!editAddress.addressLine.trim()) {
-      show("La direccion es obligatoria", "error");
+    if (!addressRegex.test(editAddress.addressLine.trim())) {
+      show("La dirección debe tener entre 8 y 120 caracteres válidos", "error");
       return;
     }
     try {
@@ -196,6 +222,11 @@ export default function ProfilePage() {
       const message = error instanceof Error ? error.message : "No se pudo actualizar la direccion";
       show(message, "error");
     }
+  };
+
+  const handleUpdateAddressSubmit = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    await handleUpdateAddress();
   };
 
   const handleDeleteAddress = async (id: number) => {
@@ -241,7 +272,7 @@ export default function ProfilePage() {
         <p>Cargando perfil...</p>
       ) : (
         <>
-          <div className="bg-white/70 border border-sand rounded-3xl p-6 grid gap-4 text-sm">
+          <form className="bg-white/70 border border-sand rounded-3xl p-6 grid gap-4 text-sm" onSubmit={saveProfileSubmit}>
             <h2 className="font-display text-2xl">Datos personales</h2>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
@@ -250,7 +281,7 @@ export default function ProfilePage() {
                   maxLength={20}
                   className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
                   value={form.firstName}
-                  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                  onChange={(e) => setForm({ ...form, firstName: e.target.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g, "") })}
                 />
               </div>
               <div>
@@ -259,7 +290,7 @@ export default function ProfilePage() {
                   maxLength={25}
                   className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
                   value={form.lastName}
-                  onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                  onChange={(e) => setForm({ ...form, lastName: e.target.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g, "") })}
                 />
               </div>
               <div>
@@ -269,16 +300,17 @@ export default function ProfilePage() {
                   maxLength={10}
                   className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })}
                 />
               </div>
               <div>
                 <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Documento</label>
                 <input
                   inputMode="numeric"
+                  maxLength={15}
                   className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
                   value={form.documentId}
-                  onChange={(e) => setForm({ ...form, documentId: e.target.value })}
+                  onChange={(e) => setForm({ ...form, documentId: e.target.value.replace(/\D/g, "") })}
                 />
               </div>
               <div>
@@ -317,20 +349,20 @@ export default function ProfilePage() {
             <div>
               <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Direccion</label>
               <input
+                maxLength={120}
                 className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
                 value={form.addressLine}
                 onChange={(e) => setForm({ ...form, addressLine: e.target.value })}
               />
             </div>
             <button
-              type="button"
-              onClick={saveProfile}
+              type="submit"
               disabled={saving}
               className="w-full rounded-full bg-terracotta text-cream py-3 uppercase tracking-[0.2em]"
             >
               {saving ? "Guardando..." : "Guardar cambios"}
             </button>
-          </div>
+          </form>
 
           <div className="bg-white/70 border border-sand rounded-3xl p-6 grid gap-4 text-sm">
             <div className="flex items-center justify-between">
@@ -345,7 +377,10 @@ export default function ProfilePage() {
             </div>
             <div className="grid gap-2">
               {addresses.map((addr) => (
-                <div key={addr.id} className="border border-sand rounded-2xl p-3">
+                <div
+                  key={addr.id}
+                  className={`border rounded-2xl p-3 ${addr.isDefault ? "border-olive/70 bg-olive/10 shadow-card" : "border-sand"}`}
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm">{addr.department} - {addr.city}</p>
@@ -360,20 +395,25 @@ export default function ProfilePage() {
                       type="button"
                       onClick={() => startEditAddress(addr)}
                       className="text-terracotta"
+                      aria-label={`Editar dirección ${addr.department} ${addr.city}`}
                     >
                       Editar
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSetDefault(addr.id)}
-                      className="text-ink/70"
-                    >
-                      Marcar principal
-                    </button>
+                    {!addr.isDefault && (
+                      <button
+                        type="button"
+                        onClick={() => handleSetDefault(addr.id)}
+                        className="text-ink/70"
+                        aria-label={`Marcar como principal la dirección ${addr.department} ${addr.city}`}
+                      >
+                        Marcar principal
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleDeleteAddress(addr.id)}
                       className="text-terracotta"
+                      aria-label={`Eliminar dirección ${addr.department} ${addr.city}`}
                     >
                       Eliminar
                     </button>
@@ -384,7 +424,7 @@ export default function ProfilePage() {
             </div>
 
             {addingAddress && (
-              <div className="mt-4 grid gap-3">
+              <form className="mt-4 grid gap-3" onSubmit={handleAddAddressSubmit}>
                 <div>
                   <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Departamento</label>
                   <select
@@ -420,23 +460,23 @@ export default function ProfilePage() {
                 <div>
                   <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Direccion</label>
                   <input
+                    maxLength={120}
                     className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
                     value={newAddress.addressLine}
                     onChange={(e) => setNewAddress({ ...newAddress, addressLine: e.target.value })}
                   />
                 </div>
                 <button
-                  type="button"
-                  onClick={handleAddAddress}
+                  type="submit"
                   className="w-full rounded-full border border-ink py-3 uppercase tracking-[0.2em]"
                 >
                   Guardar direccion
                 </button>
-              </div>
+              </form>
             )}
 
             {editingAddressId && (
-              <div className="mt-4 grid gap-3">
+              <form className="mt-4 grid gap-3" onSubmit={handleUpdateAddressSubmit}>
                 <h3 className="font-display text-lg">Editar direccion</h3>
                 <div>
                   <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Departamento</label>
@@ -473,6 +513,7 @@ export default function ProfilePage() {
                 <div>
                   <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Direccion</label>
                   <input
+                    maxLength={120}
                     className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
                     value={editAddress.addressLine}
                     onChange={(e) => setEditAddress({ ...editAddress, addressLine: e.target.value })}
@@ -480,8 +521,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <button
-                    type="button"
-                    onClick={handleUpdateAddress}
+                    type="submit"
                     className="rounded-full border border-ink px-4 py-2 uppercase tracking-[0.2em]"
                   >
                     Guardar cambios
@@ -494,11 +534,11 @@ export default function ProfilePage() {
                     Cancelar
                   </button>
                 </div>
-              </div>
+              </form>
             )}
           </div>
 
-          <div className="bg-white/70 border border-sand rounded-3xl p-6 grid gap-4 text-sm">
+          <form className="bg-white/70 border border-sand rounded-3xl p-6 grid gap-4 text-sm" onSubmit={savePasswordSubmit}>
             <h2 className="font-display text-2xl">Actualizar contraseña</h2>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
@@ -530,14 +570,13 @@ export default function ProfilePage() {
               </div>
             </div>
             <button
-              type="button"
-              onClick={savePassword}
+              type="submit"
               disabled={passwordSaving}
               className="w-full rounded-full border border-ink py-3 uppercase tracking-[0.2em]"
             >
               {passwordSaving ? "Actualizando..." : "Actualizar contraseña"}
             </button>
-          </div>
+          </form>
         </>
       )}
     </section>

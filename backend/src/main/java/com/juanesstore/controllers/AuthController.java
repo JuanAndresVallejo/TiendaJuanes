@@ -1,8 +1,10 @@
 package com.juanesstore.controllers;
 
 import com.juanesstore.dto.AuthResponse;
+import com.juanesstore.dto.ForgotPasswordRequest;
 import com.juanesstore.dto.LoginRequest;
 import com.juanesstore.dto.RegisterRequest;
+import com.juanesstore.dto.ResetPasswordRequest;
 import com.juanesstore.services.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -25,5 +27,17 @@ public class AuthController {
   @PostMapping("/login")
   public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
     return ResponseEntity.ok(authService.login(request));
+  }
+
+  @PostMapping("/forgot-password")
+  public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    authService.forgotPassword(request);
+    return ResponseEntity.ok().build();
+  }
+
+  @PostMapping("/reset-password")
+  public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    authService.resetPassword(request);
+    return ResponseEntity.ok().build();
   }
 }

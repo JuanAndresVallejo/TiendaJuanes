@@ -26,19 +26,22 @@ public class PaymentService {
   private final ProductVariantRepository productVariantRepository;
   private final EmailService emailService;
   private final OrderTrackingService orderTrackingService;
+  private final AutomationWebhookService automationWebhookService;
 
   public PaymentService(MercadoPagoService mercadoPagoService,
                         OrderRepository orderRepository,
                         PaymentRepository paymentRepository,
                         ProductVariantRepository productVariantRepository,
                         EmailService emailService,
-                        OrderTrackingService orderTrackingService) {
+                        OrderTrackingService orderTrackingService,
+                        AutomationWebhookService automationWebhookService) {
     this.mercadoPagoService = mercadoPagoService;
     this.orderRepository = orderRepository;
     this.paymentRepository = paymentRepository;
     this.productVariantRepository = productVariantRepository;
     this.emailService = emailService;
     this.orderTrackingService = orderTrackingService;
+    this.automationWebhookService = automationWebhookService;
   }
 
   @Transactional
@@ -91,6 +94,7 @@ public class PaymentService {
       }
       orderTrackingService.recordStatus(order, OrderStatus.PAID);
       emailService.sendPaymentConfirmed(order);
+      automationWebhookService.sendPaymentApproved(order);
       logger.info("Payment approved orderId={} paymentId={}", order.getId(), paymentId);
     } else if ("rejected".equalsIgnoreCase(status)) {
       order.setPaymentStatus(PaymentStatus.REJECTED);

@@ -7,10 +7,12 @@ import jakarta.validation.constraints.Size;
 public class UpdateProfileRequest {
   @NotBlank
   @Size(max = 20)
+  @Pattern(regexp = "^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$")
   private String firstName;
 
   @NotBlank
   @Size(max = 25)
+  @Pattern(regexp = "^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$")
   private String lastName;
 
   @NotBlank
@@ -18,7 +20,7 @@ public class UpdateProfileRequest {
   private String phone;
 
   @NotBlank
-  @Pattern(regexp = "\\d+")
+  @Pattern(regexp = "\\d{6,15}")
   private String documentId;
 
   @NotBlank
@@ -28,6 +30,8 @@ public class UpdateProfileRequest {
   private String city;
 
   @NotBlank
+  @Size(min = 8, max = 120)
+  @Pattern(regexp = "^[A-Za-z0-9ÁÉÍÓÚáéíóúÑñ#.,\\- ]+$")
   private String addressLine;
 
   public String getFirstName() {

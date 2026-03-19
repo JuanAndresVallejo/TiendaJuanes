@@ -10,11 +10,22 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadFavorites = () => {
     getFavorites()
       .then(setFavorites)
       .catch(() => setError("No se pudieron cargar tus favoritos"))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadFavorites();
+    const handler = () => {
+      setLoading(true);
+      setError(null);
+      loadFavorites();
+    };
+    window.addEventListener("favorites-updated", handler);
+    return () => window.removeEventListener("favorites-updated", handler);
   }, []);
 
   return (

@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { Playfair_Display, Manrope } from "next/font/google";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import WhatsappButton from "../components/WhatsappButton";
 import { ToastProvider } from "../components/ToastProvider";
 
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-display" });
@@ -23,7 +22,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Navbar />
             <main className="flex-1">{children}</main>
             <Footer />
-            <WhatsappButton />
           </div>
         </ToastProvider>
       </body>

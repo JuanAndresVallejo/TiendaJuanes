@@ -96,15 +96,18 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="bg-white/70 border border-sand rounded-2xl p-4">
+        <div className="bg-white/70 border border-sand rounded-2xl p-4" role="region" aria-label="Gráfica de ventas por día">
+          <h3 className="text-sm uppercase tracking-[0.2em] text-ink/60 mb-3">Ventas por día</h3>
           <Line data={salesByDay} />
         </div>
-        <div className="bg-white/70 border border-sand rounded-2xl p-4">
+        <div className="bg-white/70 border border-sand rounded-2xl p-4" role="region" aria-label="Gráfica de ventas por mes">
+          <h3 className="text-sm uppercase tracking-[0.2em] text-ink/60 mb-3">Ventas por mes</h3>
           <Bar data={salesByMonth} />
         </div>
       </div>
 
-      <div className="bg-white/70 border border-sand rounded-2xl p-4">
+      <div className="bg-white/70 border border-sand rounded-2xl p-4" role="region" aria-label="Gráfica de productos más vendidos">
+        <h3 className="text-sm uppercase tracking-[0.2em] text-ink/60 mb-3">Productos más vendidos</h3>
         <Bar data={topProducts} />
       </div>
     </div>

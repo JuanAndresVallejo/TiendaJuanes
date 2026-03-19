@@ -43,6 +43,7 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
 
   return (
     <section className="max-w-6xl mx-auto px-6 py-12">
+      <a href="/productos" className="text-xs uppercase tracking-[0.2em] text-ink/60">Atras</a>
       <div className="grid gap-10 md:grid-cols-[1.1fr_1fr]">
         <ProductGallery images={images} />
         <div>

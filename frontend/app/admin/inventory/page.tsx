@@ -65,19 +65,34 @@ export default function AdminInventoryPage() {
 
   return (
     <div>
+      <div className="mb-6 grid gap-3 md:grid-cols-2">
+        <div className="bg-white/70 border border-sand rounded-2xl p-4">
+          <h3 className="font-display text-lg">Inventario</h3>
+          <p className="text-sm text-ink/70 mt-1">
+            Aquí ajustas existencias por variante (color/talla), y registras trazabilidad de stock.
+          </p>
+        </div>
+        <a href="/admin/products" className="bg-white/70 border border-sand rounded-2xl p-4 block">
+          <h3 className="font-display text-lg">Ir a Productos</h3>
+          <p className="text-sm text-ink/70 mt-1">
+            Productos es para editar contenido comercial, no para ajustes de stock.
+          </p>
+        </a>
+      </div>
       <h2 className="font-display text-2xl mb-6">Inventario</h2>
       {error && <p className="text-terracotta mb-4">{error}</p>}
       <div className="overflow-x-auto bg-white/70 border border-sand rounded-2xl">
         <table className="w-full text-sm">
+          <caption className="sr-only">Inventario por variantes de producto</caption>
           <thead className="text-left uppercase tracking-[0.2em] text-xs">
             <tr>
-              <th className="p-3">Producto</th>
-              <th className="p-3">Referencia</th>
-              <th className="p-3">Color</th>
-              <th className="p-3">Talla</th>
-              <th className="p-3">SKU</th>
-              <th className="p-3">Stock actual</th>
-              <th className="p-3">Acciones</th>
+              <th scope="col" className="p-3">Producto</th>
+              <th scope="col" className="p-3">Referencia</th>
+              <th scope="col" className="p-3">Color</th>
+              <th scope="col" className="p-3">Talla</th>
+              <th scope="col" className="p-3">SKU</th>
+              <th scope="col" className="p-3">Stock actual</th>
+              <th scope="col" className="p-3">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -96,6 +111,7 @@ export default function AdminInventoryPage() {
                           }))
                         }
                         className="text-left"
+                        aria-label={`${expanded[item.productVariantId] ? "Ocultar" : "Mostrar"} imagen de ${item.productName}`}
                       >
                         {item.productName}
                       </button>
@@ -113,13 +129,21 @@ export default function AdminInventoryPage() {
                           onChange={(e) =>
                             setAdjustments((prev) => ({ ...prev, [item.productVariantId]: e.target.value }))
                           }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              adjust(item.productVariantId);
+                            }
+                          }}
                           placeholder="+20 o -15"
                           className="w-24 rounded-lg border border-sand bg-white/80 px-2 py-1"
+                          aria-label={`Ajuste de inventario para ${item.productName} ${item.color} ${item.size}`}
                         />
                         <button
                           type="button"
                           onClick={() => adjust(item.productVariantId)}
                           className="rounded-full border border-ink px-3 py-1 text-xs uppercase tracking-[0.2em]"
+                          aria-label={`Aplicar ajuste para ${item.productName} ${item.color} ${item.size}`}
                         >
                           Aplicar
                         </button>
@@ -158,6 +182,7 @@ export default function AdminInventoryPage() {
             value={historyVariantId}
             onChange={(e) => setHistoryVariantId(e.target.value ? Number(e.target.value) : "")}
             className="rounded-xl border border-sand bg-white/80 px-3 py-2 text-sm"
+            aria-label="Filtrar historial por variante"
           >
             <option value="">Todos</option>
             {items.map((item) => (
@@ -169,15 +194,16 @@ export default function AdminInventoryPage() {
         </div>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
+            <caption className="sr-only">Historial de movimientos de inventario</caption>
             <thead className="text-left uppercase tracking-[0.2em] text-xs">
               <tr>
-                <th className="p-3">Fecha</th>
-                <th className="p-3">Producto</th>
-                <th className="p-3">SKU</th>
-                <th className="p-3">Delta</th>
-                <th className="p-3">Antes</th>
-                <th className="p-3">Despues</th>
-                <th className="p-3">Motivo</th>
+                <th scope="col" className="p-3">Fecha</th>
+                <th scope="col" className="p-3">Producto</th>
+                <th scope="col" className="p-3">SKU</th>
+                <th scope="col" className="p-3">Delta</th>
+                <th scope="col" className="p-3">Antes</th>
+                <th scope="col" className="p-3">Despues</th>
+                <th scope="col" className="p-3">Motivo</th>
               </tr>
             </thead>
             <tbody>

@@ -37,6 +37,9 @@ export default function AdminProductForm({
   onSubmit: (data: ProductFormData) => Promise<void>;
   loading?: boolean;
 }) {
+  const brandOptions = ["", "Levis", "Nike", "Adidas", "Puma", "Calvin Klein", "Tommy Hilfiger", "Guess", "Vans", "Reebok", "Converse", "New Balance", "Ralph Lauren"];
+  const categoryOptions = ["", "Hombre", "Mujer", "Calzado", "Accesorios"];
+
   const [form, setForm] = useState<ProductFormData>(
     initial || {
       name: "",
@@ -96,19 +99,27 @@ export default function AdminProductForm({
         </div>
         <div>
           <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Marca</label>
-          <input
+          <select
             value={form.brand}
             onChange={(e) => updateField("brand", e.target.value)}
             className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
-          />
+          >
+            {brandOptions.map((brand) => (
+              <option key={brand} value={brand}>{brand || "Selecciona marca"}</option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Categoria</label>
-          <input
+          <select
             value={form.category}
             onChange={(e) => updateField("category", e.target.value)}
             className="mt-2 w-full rounded-xl border border-sand bg-white/80 px-4 py-3"
-          />
+          >
+            {categoryOptions.map((category) => (
+              <option key={category} value={category}>{category || "Selecciona categoría"}</option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-sm uppercase tracking-[0.2em] text-ink/70">Precio base</label>

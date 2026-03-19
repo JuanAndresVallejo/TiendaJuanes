@@ -22,7 +22,7 @@ export default function CartPage() {
   };
 
   useEffect(() => {
-    if (getRole() === "ADMIN") {
+    if (["ADMIN", "ROLE_ADMIN"].includes(getRole() || "")) {
       window.location.href = "/admin/dashboard";
       return;
     }

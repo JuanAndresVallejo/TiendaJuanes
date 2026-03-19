@@ -15,11 +15,14 @@ export default function Navbar() {
   const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
-    setFullName(getFullName());
-    setRole(getRole());
-    setIsAuthenticated(!!getToken());
+    const syncAuth = () => {
+      setFullName(getFullName());
+      setRole(getRole());
+      setIsAuthenticated(!!getToken());
+    };
+    syncAuth();
     const loadCartCount = () => {
-      if (getToken() && getRole() !== "ADMIN") {
+      if (getToken() && !["ADMIN", "ROLE_ADMIN"].includes(getRole() || "")) {
         getCart()
           .then((items) => {
             const total = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -32,14 +35,24 @@ export default function Navbar() {
     };
     loadCartCount();
     const handler = () => loadCartCount();
+    const authHandler = () => {
+      syncAuth();
+      loadCartCount();
+    };
     window.addEventListener("cart-updated", handler);
-    return () => window.removeEventListener("cart-updated", handler);
+    window.addEventListener("auth-updated", authHandler);
+    return () => {
+      window.removeEventListener("cart-updated", handler);
+      window.removeEventListener("auth-updated", authHandler);
+    };
   }, []);
 
-  const profileHref = role === "ADMIN" ? "/admin/dashboard" : "/mi-perfil";
+  const isRoleAdmin = role === "ADMIN" || role === "ROLE_ADMIN";
+  const profileHref = isRoleAdmin ? "/admin/dashboard" : "/mi-perfil";
   const profileLabel = fullName ? `Mi perfil (${fullName.split(" ")[0]})` : "Mi perfil";
-  const isAdmin = isAuthenticated && role === "ADMIN";
-  const isCustomer = isAuthenticated && role !== "ADMIN";
+  const isAdmin = isAuthenticated && isRoleAdmin;
+  const isCustomer = isAuthenticated && !isRoleAdmin;
+  const canUseSearch = !isAdmin;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +75,7 @@ export default function Navbar() {
         <Link href="/" className="text-2xl font-display tracking-wide">
           Tienda Juanes
         </Link>
-        {isAuthenticated && (
+        {canUseSearch && (
           <form onSubmit={handleSubmit} className="flex-1 min-w-[220px] max-w-md">
             <input
               value={query}

@@ -1,6 +1,7 @@
 import HomePromoBanner from "../components/HomePromoBanner";
 import HomeShowcase from "../components/HomeShowcase";
 import HomeHeroActions from "../components/HomeHeroActions";
+import WhatsappButton from "../components/WhatsappButton";
 
 export default async function HomePage() {
   const brands = [
@@ -83,6 +84,7 @@ export default async function HomePage() {
       </div>
       <HomePromoBanner />
       <HomeShowcase />
+      <WhatsappButton />
     </section>
   );
 }

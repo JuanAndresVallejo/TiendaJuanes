@@ -96,8 +96,8 @@ export default function AdminOrderDetailPage() {
 
   const handleMarkPacked = async () => {
     if (!order) return;
-    if (order.status !== "PACKING") {
-      show("El pedido debe estar en estado EMPACANDO", "error");
+    if (!["PENDING", "PAID", "PACKING"].includes(order.status)) {
+      show("El pedido debe estar en estado PENDIENTE, PAGO CONFIRMADO o EMPACANDO", "error");
       return;
     }
     try {
@@ -146,6 +146,7 @@ export default function AdminOrderDetailPage() {
   return (
     <div className="space-y-8">
       <div>
+        <a href="/admin/orders" className="text-xs uppercase tracking-[0.2em] text-ink/60">Atras</a>
         <h2 className="font-display text-2xl mb-2">Pedido #{order.orderId}</h2>
         <p className="text-sm text-ink/70">Detalle para empaque</p>
       </div>
@@ -214,6 +215,7 @@ export default function AdminOrderDetailPage() {
                 checked={!!packed[item.itemId]}
                 onChange={() => togglePacked(item)}
                 disabled={updatingItemId === item.itemId}
+                aria-label={`Marcar ${item.productName} como empacado`}
               />
               <div className="w-16 h-20 bg-sand/60 rounded-lg overflow-hidden relative flex-shrink-0">
                 {item.imageUrl ? (
@@ -245,7 +247,7 @@ export default function AdminOrderDetailPage() {
         </div>
         <button
           onClick={handleMarkPacked}
-          disabled={updating || order.status !== "PACKING" || !allPacked}
+          disabled={updating || !["PENDING", "PAID", "PACKING"].includes(order.status) || !allPacked}
           className="w-full md:w-auto rounded-full bg-ink text-cream px-6 py-3 uppercase tracking-[0.2em] text-xs disabled:opacity-50"
         >
           {updating ? "Actualizando..." : "Pedido empacado"}
@@ -262,9 +264,12 @@ export default function AdminOrderDetailPage() {
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             rows={3}
+            maxLength={300}
             placeholder="Escribe una nota interna para este pedido"
             className="w-full rounded-2xl border border-sand bg-white/80 px-4 py-3 text-sm"
+            aria-label="Nota interna del pedido"
           />
+          <p className="text-xs text-ink/60 text-right">{newNote.length}/300</p>
           <button
             type="button"
             onClick={handleAddNote}

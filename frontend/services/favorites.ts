@@ -9,6 +9,12 @@ function authHeaders() {
   return headers;
 }
 
+function notifyFavoritesUpdated() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("favorites-updated"));
+  }
+}
+
 export async function getFavorites(): Promise<Product[]> {
   const res = await fetch(apiUrl("/favorites"), { headers: authHeaders() });
   if (!res.ok) throw new Error("No se pudieron cargar favoritos");
@@ -21,6 +27,7 @@ export async function addFavorite(productId: number) {
     headers: authHeaders()
   });
   if (!res.ok) throw new Error("No se pudo agregar a favoritos");
+  notifyFavoritesUpdated();
 }
 
 export async function removeFavorite(productId: number) {
@@ -29,6 +36,7 @@ export async function removeFavorite(productId: number) {
     headers: authHeaders()
   });
   if (!res.ok) throw new Error("No se pudo eliminar de favoritos");
+  notifyFavoritesUpdated();
 }
 
 export async function isFavorite(productId: number): Promise<boolean> {

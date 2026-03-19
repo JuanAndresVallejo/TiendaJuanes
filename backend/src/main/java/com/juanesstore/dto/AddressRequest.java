@@ -1,6 +1,8 @@
 package com.juanesstore.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class AddressRequest {
   @NotBlank
@@ -10,6 +12,8 @@ public class AddressRequest {
   private String city;
 
   @NotBlank
+  @Size(min = 8, max = 120)
+  @Pattern(regexp = "^[A-Za-z0-9ÁÉÍÓÚáéíóúÑñ#.,\\- ]+$")
   private String addressLine;
 
   private Boolean isDefault;

@@ -42,6 +42,7 @@ public class OrderService {
   private final PaymentRepository paymentRepository;
   private final EmailService emailService;
   private final OrderTrackingService orderTrackingService;
+  private final AutomationWebhookService automationWebhookService;
 
   public OrderService(OrderRepository orderRepository,
                       CartItemRepository cartItemRepository,
@@ -51,7 +52,8 @@ public class OrderService {
                       CouponRepository couponRepository,
                       PaymentRepository paymentRepository,
                       EmailService emailService,
-                      OrderTrackingService orderTrackingService) {
+                      OrderTrackingService orderTrackingService,
+                      AutomationWebhookService automationWebhookService) {
     this.orderRepository = orderRepository;
     this.cartItemRepository = cartItemRepository;
     this.addressRepository = addressRepository;
@@ -61,6 +63,7 @@ public class OrderService {
     this.paymentRepository = paymentRepository;
     this.emailService = emailService;
     this.orderTrackingService = orderTrackingService;
+    this.automationWebhookService = automationWebhookService;
   }
 
   @Transactional
@@ -129,6 +132,7 @@ public class OrderService {
     orderTrackingService.recordStatus(saved, OrderStatus.PENDING);
     logger.info("Order created id={} user={}", saved.getId(), user.getEmail());
     emailService.sendOrderConfirmation(saved);
+    automationWebhookService.sendOrderCreated(saved);
 
     String paymentMethod = request.getPaymentMethod() == null ? "MERCADOPAGO" : request.getPaymentMethod();
     if (!"MERCADOPAGO".equalsIgnoreCase(paymentMethod)) {
@@ -193,7 +197,10 @@ public class OrderService {
             item.getProductVariant().getColor(),
             item.getProductVariant().getSize(),
             item.getQuantity(),
-            item.getPrice()
+            item.getPrice(),
+            item.getProductVariant().getProduct().getImages().isEmpty()
+                ? null
+                : item.getProductVariant().getProduct().getImages().get(0).getImageUrl()
         ))
         .collect(Collectors.toList());
 

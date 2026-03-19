@@ -28,7 +28,9 @@ export default function CartItem({ name, color, size, quantity, price, imageUrl 
           <span className="text-sm">Cantidad: {quantity}</span>
           <span className="text-terracotta font-semibold">${price.toLocaleString("es-CO")}</span>
         </div>
-        <div className="text-sm text-ink/70 mt-1">Subtotal: ${subtotal.toLocaleString("es-CO")}</div>
+        <div className="mt-2 text-base font-semibold text-terracotta">
+          Subtotal: ${subtotal.toLocaleString("es-CO")}
+        </div>
       </div>
     </div>
   );

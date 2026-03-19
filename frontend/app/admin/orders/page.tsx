@@ -46,18 +46,19 @@ export default function AdminOrdersPage() {
       </div>
       <div className="overflow-x-auto bg-white/70 border border-sand rounded-2xl">
         <table className="w-full text-sm">
+          <caption className="sr-only">Listado de pedidos administrables</caption>
           <thead className="text-left uppercase tracking-[0.2em] text-xs">
             <tr>
-              <th className="p-3">ID</th>
-              <th className="p-3">Cliente</th>
-              <th className="p-3">Fecha</th>
-              <th className="p-3">Pago</th>
-              <th className="p-3">Total</th>
-              <th className="p-3">Estado</th>
-              <th className="p-3">Metodo</th>
-              <th className="p-3">Direccion</th>
-              <th className="p-3">Notas</th>
-              <th className="p-3">Detalle</th>
+              <th scope="col" className="p-3">ID</th>
+              <th scope="col" className="p-3">Cliente</th>
+              <th scope="col" className="p-3">Fecha</th>
+              <th scope="col" className="p-3">Pago</th>
+              <th scope="col" className="p-3">Total</th>
+              <th scope="col" className="p-3">Estado</th>
+              <th scope="col" className="p-3">Metodo</th>
+              <th scope="col" className="p-3">Direccion</th>
+              <th scope="col" className="p-3">Notas</th>
+              <th scope="col" className="p-3">Detalle</th>
             </tr>
           </thead>
           <tbody>
@@ -77,6 +78,7 @@ export default function AdminOrdersPage() {
                     value={order.status}
                     onChange={(e) => handleStatus(order.id, e.target.value)}
                     className="rounded-lg border border-sand bg-white/80 px-2 py-1"
+                    aria-label={`Estado del pedido ${order.id}`}
                   >
                     {[
                       "PENDING",
@@ -97,6 +99,7 @@ export default function AdminOrdersPage() {
                   <Link
                     href={`/admin/orders/${order.id}`}
                     className="text-xs uppercase tracking-[0.2em] text-terracotta"
+                    aria-label={`Ver detalle del pedido ${order.id}`}
                   >
                     Ver
                   </Link>

@@ -62,6 +62,8 @@ Servicios en `docker-compose.yml`:
 ### Auth
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
 ### Perfil
 - `GET /api/users/me`
 
@@ -183,6 +185,8 @@ Migraciones principales:
 - `V23__create_stock_movements.sql`
 - `V24__create_order_notes.sql`
 - `V25__create_favorites.sql`
+- `V26__create_password_reset_tokens.sql`
+- `V27__refresh_products_real_catalog.sql`
 
 ---
 
@@ -218,6 +222,7 @@ Redis configurado en `application.yml` y `docker-compose.yml`.
 - Confirmacion de pedido
 - Pago confirmado
 - Pedido enviado
+- Recuperacion de contraseña
 
 Variables en `.env` / `docker-compose.yml`.
 Si SMTP no esta configurado, el checkout no se bloquea (loggea el error).
@@ -239,6 +244,7 @@ Publicas:
 - `/producto/[id]`
 - `/login`
 - `/registro`
+- `/recuperar-password`
 - `/carrito`
 - `/checkout`
 
@@ -292,7 +298,7 @@ sudo docker-compose up -d --build backend
 ```
 
 Si el banner de estado en footer no aparece:
-- Verifica que `NEXT_PUBLIC_STATUS_BANNER=true` este en `docker-compose.yml`
+- Verifica que backend y `/api/health` respondan.
 - Rebuild del frontend/stack.
 
 ---
@@ -304,3 +310,46 @@ Si el banner de estado en footer no aparece:
 - Inventario protegido con optimistic locking en `ProductVariant`.
 - Indices en `orders.status`, `orders.created_at` y `products.ref_code`.
 - Dashboard y "Lo mas vendido" calculados con SQL agregado.
+
+## 15) Cambios UX recientes (fase 2026-03-18)
+
+- Mensajeria de UI migrada de toasts a pop alerts con cierre manual.
+- Redes sociales visibles solo en landing:
+  - Boton `Redes` desplegable (Instagram, TikTok, WhatsApp)
+  - Boton fijo `Soporte`
+- Checkout usa botones visuales para metodos de pago (PSE, Transferencia, Contraentrega).
+- Notas de checkout y notas internas admin limitadas a 300 caracteres.
+- Galeria de producto con expansion de imagen y navegacion por teclado en modal.
+- Botones `Atras` en vistas accionables clave.
+- Favoritos y nombre en navbar se actualizan sin recargar.
+- Flujo de recuperacion de contraseña habilitado (`/recuperar-password`).
+
+## 16) Actualizacion tecnica reciente
+
+- Validaciones de perfil y direcciones alineadas con registro:
+  - nombres/apellidos solo letras y espacios
+  - celular 10 digitos
+  - documento 6-15 digitos
+  - direccion con patron y longitud controlada
+- Modal de agregar al carrito en catalogo incluye cantidad y se cierra automaticamente al confirmar.
+- Vista de detalle de producto para visitante no logeado prioriza informacion y bloquea compra.
+- Flujo admin de "Pedido empacado" habilitado para estados `PENDING`, `PAID` y `PACKING` con checklist completo.
+- Nueva migracion: `V27__refresh_products_real_catalog.sql` (catalogo con imagenes reales y datos comerciales mas concretos).
+- Accesibilidad base reforzada:
+  - anillo de foco global con `:focus-visible`
+  - cierre de dialogos con tecla `Esc`
+  - galeria expandida con navegacion por flechas y botones prev/sig
+- Validaciones frontend centralizadas en `frontend/services/validation.ts` para login, registro, perfil y recuperacion.
+- Script de smoke QA: `scripts/qa-smoke.sh` (home, health, productos y busqueda).
+- Cobertura adicional en admin:
+  - `caption` y `scope` en tablas de pedidos/productos/inventario/cupones/usuarios
+  - formularios de cupones/banners con submit por teclado (`Enter`)
+  - acciones clave con `aria-label` (editar, eliminar, ver, cambiar estado, ajustes)
+- Cobertura cliente en accesibilidad:
+  - `/productos`: buscador/filtros/orden con `aria-label` y feedback asistivo
+  - `/checkout`: submit por teclado, `aria-label` y `radiogroup` para metodos de pago
+  - `/mis-pedidos`: listado semantico (`ul/li`) y labels de navegacion
+  - `/mis-pedidos/[id]`: timeline semantico (`ol/li`) con `aria-current`
+  - `/mi-perfil`: formularios con submit por `Enter` en datos personales, direcciones y contrasena
+- Build fix Next.js:
+  - `/recuperar-password` envuelve el componente que usa `useSearchParams` en `Suspense`, evitando error de prerender.

@@ -14,6 +14,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
   List<Order> findByUserOrderByCreatedAtDesc(User user);
+  List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
+  long countByUserId(Long userId);
 
   @Query("""
       SELECT DISTINCT o

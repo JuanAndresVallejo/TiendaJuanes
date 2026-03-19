@@ -28,15 +28,74 @@ Backend:
 - `MAIL_PORT`
 - `MAIL_USERNAME`
 - `MAIL_PASSWORD`
+- `FRONTEND_URL` (para enlaces de recuperación de contraseña)
 
 Frontend:
 - `NEXT_PUBLIC_API_URL`
-- `NEXT_PUBLIC_STATUS_BANNER` (true en dev para mostrar estado de servicios)
 
 ## Levantar el proyecto
 
 ```bash
 docker-compose up --build
+```
+
+## Compartir localhost con URL publica
+
+Para exponer tu proyecto local (por defecto en `http://localhost:8088`) y compartirlo con personas en otra red:
+
+```bash
+./scripts/tunnel.sh
+```
+
+Opcional, si usas otro puerto:
+
+```bash
+./scripts/tunnel.sh 3000
+```
+
+El comando imprimira una URL `https://...trycloudflare.com` que puedes compartir.
+Mantén la terminal abierta para que el tunel siga activo.
+
+## Smoke QA rapido
+
+Con el stack levantado, ejecuta:
+
+```bash
+./scripts/qa-smoke.sh
+```
+
+Opcional con otra URL base:
+
+```bash
+./scripts/qa-smoke.sh http://localhost:8088
+```
+
+Valida de forma rapida:
+- Home frontend
+- `GET /api/health`
+- `GET /api/products` (listado)
+- `GET /api/products?search=...` (busqueda)
+
+### URL fija (Cloudflare Tunnel nombrado)
+
+`trycloudflare.com` siempre es temporal. Para una URL fija necesitas dominio propio en Cloudflare.
+
+Pasos:
+
+1) En Cloudflare Zero Trust crea un **Named Tunnel**.
+2) Agrega un **Public Hostname** (ejemplo: `tienda.tudominio.com`).
+3) Como servicio de origen usa `http://host.docker.internal:8088`.
+4) Copia el token del túnel.
+5) Ejecuta:
+
+```bash
+CF_TUNNEL_TOKEN=tu_token_aqui ./scripts/tunnel-fixed.sh
+```
+
+Si tu proyecto no está en `8088`:
+
+```bash
+PORT=3000 CF_TUNNEL_TOKEN=tu_token_aqui ./scripts/tunnel-fixed.sh
 ```
 
 Puertos por defecto:
@@ -60,6 +119,8 @@ Admin:
 Auth:
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
 
 Addresses:
 - `GET /api/addresses`
@@ -142,8 +203,10 @@ Favorites:
 ## Notas
 
 - Las migraciones iniciales se encuentran en `backend/src/main/resources/db/migration`.
+- El catalogo se refresca con productos e imagenes reales mediante `V27__refresh_products_real_catalog.sql`.
 - Redis se usa para cachear productos y busquedas.
 - Emails requieren configurar SMTP en variables de entorno.
 - En desarrollo, el footer muestra el estado de servicios (backend, API, postgres, redis, nginx, MercadoPago, SMTP).
 - Inventario protegido con optimistic locking en variantes.
 - Checkout permite PSE (MercadoPago), Transferencia y Contraentrega.
+- Recuperacion de contraseña disponible en `/recuperar-password`.

@@ -4,8 +4,9 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Product } from "../services/products";
 import { addToCart } from "../services/cart";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "./ToastProvider";
+import { getRole, getToken } from "../services/auth";
 
 export default function ProductCard({ product }: { product: Product }) {
   const image = product.images[0]?.imageUrl;
@@ -19,24 +20,56 @@ export default function ProductCard({ product }: { product: Product }) {
   const sizes = Array.from(new Set(product.variants.map((v) => v.size)));
   const [selectedColor, setSelectedColor] = useState(colors[0] || "");
   const [selectedSize, setSelectedSize] = useState(sizes[0] || "");
+  const [quantity, setQuantity] = useState(1);
   const { show } = useToast();
 
   const selectedVariant = product.variants.find(
     (v) => v.color === selectedColor && v.size === selectedSize
   );
   const outOfStock = product.variants.every((v) => v.stock <= 0);
+  const token = getToken();
+  const role = getRole();
+  const isAdmin = role === "ADMIN" || role === "ROLE_ADMIN";
+  const canBuy = !!token && !isAdmin;
 
   const handleAdd = async (variantId: number) => {
     try {
       setLoading(true);
-      await addToCart(variantId, 1);
+      await addToCart(variantId, quantity);
       show("Producto añadido al carrito");
+      setShowPicker(false);
+      setQuantity(1);
     } catch (error) {
       show("Debes iniciar sesión para agregar al carrito", "error");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleAddClick = () => {
+    if (!token) {
+      show("Debes iniciar sesión", "error");
+      return;
+    }
+    if (isAdmin) {
+      show("Los administradores no pueden comprar productos", "error");
+      return;
+    }
+    setShowPicker(true);
+  };
+
+  useEffect(() => {
+    if (!showPicker) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowPicker(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showPicker]);
+
+  useEffect(() => {
+    setQuantity(1);
+  }, [selectedColor, selectedSize]);
 
   return (
     <div className="bg-white/70 rounded-3xl overflow-hidden shadow-card border border-sand">
@@ -82,17 +115,25 @@ export default function ProductCard({ product }: { product: Product }) {
             Ver detalle
           </Link>
         </div>
-        <button
-          onClick={() => setShowPicker(true)}
-          disabled={loading || outOfStock}
-          className="mt-4 w-full rounded-full bg-ink text-cream py-2 uppercase tracking-[0.2em] text-xs"
-        >
-          {outOfStock ? "Sin stock" : loading ? "Agregando..." : "Añadir al carrito"}
-        </button>
+        {!isAdmin && (
+          <button
+            onClick={handleAddClick}
+            disabled={loading || outOfStock}
+            className="mt-4 w-full rounded-full bg-ink text-cream py-2 uppercase tracking-[0.2em] text-xs"
+          >
+            {outOfStock ? "Sin stock" : loading ? "Agregando..." : "Añadir al carrito"}
+          </button>
+        )}
       </div>
-      {showPicker && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-cream rounded-2xl p-6 w-full max-w-sm space-y-4">
+      {showPicker && canBuy && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowPicker(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Seleccionar especificaciones del producto"
+        >
+          <div className="bg-cream rounded-2xl p-6 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
             <h4 className="font-display text-lg">Selecciona especificaciones</h4>
             <div>
               <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Color</label>
@@ -117,6 +158,33 @@ export default function ProductCard({ product }: { product: Product }) {
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-[0.2em] text-ink/60">Cantidad</label>
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                  className="w-8 h-8 rounded-full border border-sand"
+                  aria-label="Disminuir cantidad"
+                >
+                  -
+                </button>
+                <span className="min-w-[40px] text-center text-sm">{quantity}</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuantity((prev) => {
+                      const maxStock = selectedVariant?.stock || 1;
+                      return Math.min(maxStock, prev + 1);
+                    })
+                  }
+                  className="w-8 h-8 rounded-full border border-sand"
+                  aria-label="Aumentar cantidad"
+                >
+                  +
+                </button>
+              </div>
             </div>
             {selectedVariant && selectedVariant.stock <= 0 && (
               <p className="text-sm text-terracotta">Sin stock para esta combinación.</p>
